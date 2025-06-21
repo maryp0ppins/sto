@@ -1,5 +1,4 @@
 'use client'
-import type { StepProps } from '../StepProps'
 
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
@@ -27,18 +26,19 @@ export default function StepConfirm({ context }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId:   context.client._id,
-          vehicleId:  context.vehicle._id,
-          serviceIds: context.services.map(s => s._id),
-          slotStart:  context.slot.start,
-          slotEnd:    context.slot.end,
+          clientId:   context.client!._id,
+          vehicleId:  context.vehicle!._id,
+          serviceIds: context.services!.map(s => s._id),
+          slotStart:  context.slot!.start,
+          slotEnd:    context.slot!.end,
         }),
       })
       if (!res.ok) throw new Error(await res.text())
       await res.json()
       router.push('/dashboard/kanban')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const e = err as Error
+      setError(e.message)
     } finally {
       setLoading(false)
     }
@@ -49,12 +49,12 @@ export default function StepConfirm({ context }: Props) {
       <h2 className="text-xl font-bold">Подтверждение</h2>
 
       <ul className="text-sm space-y-1">
-        <li><b>Клиент:</b> {context.client.name} ({context.client.phone})</li>
-        <li><b>Авто:</b> {context.vehicle.brand} {context.vehicle.model}</li>
-        <li><b>Услуги:</b> {context.services.map(s => s.name).join(', ')}</li>
+        <li><b>Клиент:</b> {context.client!.name} ({context.client!.phone})</li>
+        <li><b>Авто:</b> {context.vehicle!.brand} {context.vehicle!.model}</li>
+        <li><b>Услуги:</b> {context.services!.map(s => s.name).join(', ')}</li>
         <li>
           <b>Время:</b>{' '}
-          {format(new Date(context.slot.start), 'd MMM yyyy HH:mm', { locale: ru })}
+          {format(new Date(context.slot!.start), 'd MMM yyyy HH:mm', { locale: ru })}
         </li>
       </ul>
 
