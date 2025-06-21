@@ -1,16 +1,15 @@
 'use client'
-import type { StepProps } from '../StepProps'
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Service } from '@/app/dashboard/record/new/types'
-type Props = {
-  onNext: (data: { services: Service[] }) => void
-}
+import type { StepProps } from '../StepProps'
 
-export default function StepServices({ onNext }: Props) {
+type Props = StepProps
+
+export default function StepServices({ onNextAction }: Props) {
   const [services, setServices] = useState<Service[]>([])
   const [selected, setSelected] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +35,7 @@ export default function StepServices({ onNext }: Props) {
 
   const handleNext = () => {
     if (selected.length === 0) return
-    onNext({ services: selected })
+    onNextAction({ services: selected })
   }
 
   return (

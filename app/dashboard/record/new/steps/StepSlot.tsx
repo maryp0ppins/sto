@@ -1,5 +1,4 @@
 'use client'
-import type { StepProps } from '../StepProps'
 
 import { useEffect, useMemo, useState } from 'react'
 import { format, addMinutes } from 'date-fns'
@@ -8,18 +7,16 @@ import { ru } from 'date-fns/locale'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Service, Slot, WizardContext } from '@/app/dashboard/record/new/types'
+import { Service, Slot } from '@/app/dashboard/record/new/types'
+import type { StepProps } from '../StepProps'
 
-type Props = {
-  context: WizardContext
-  onNext: (data: Partial<WizardContext>) => void
-}
+type Props = StepProps
 
 /** суммируем минуты выбранных услуг */
 const totalDuration = (services: Service[]) =>
   services.reduce((acc, s) => acc + s.duration, 0)
 
-export default function StepSlot({ context, onNext }: Props) {
+export default function StepSlot({ context, onNextAction }: Props) {
   const durationMinutes = totalDuration(context.services ?? [])
   const [date, setDate] = useState<string>(() => format(new Date(), 'yyyy-MM-dd'))
   const [slots, setSlots] = useState<Slot[]>([])
@@ -37,7 +34,7 @@ export default function StepSlot({ context, onNext }: Props) {
 
   /** при выборе */
   const choose = (slot: Slot) => setSelected(slot)
-  const next = () => selected && onNext({ slot: selected })
+  const next = () => selected && onNextAction({ slot: selected })
 
   /* человекочитаемый заголовок */
   const headerDate = useMemo(() => {
