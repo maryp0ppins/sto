@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
   const valid = user && user.password === password
 
+
   if (!valid) {
     return new Response('Unauthorized', { status: 401 })
   }

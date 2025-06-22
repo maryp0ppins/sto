@@ -58,7 +58,6 @@ export default function StepServices({ onNextAction }: Props) {
               checked={selected.some(s => s._id === service._id)}
               onCheckedChange={() => toggleService(service)}
             />
-
             {service.title} — {service.price} lei ({service.durationMinutes} мин)
           </label>
         ))}
@@ -66,7 +65,6 @@ export default function StepServices({ onNextAction }: Props) {
 
       {selected.length > 0 && (
         <p className="text-sm text-muted-foreground">
-
           Всего: {total.price} lei • {total.minutes} мин
 
         </p>
