@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "create-admin": "ts-node scripts/createUser.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
@@ -46,6 +47,7 @@
     "eslint-config-next": "15.3.4",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ts-node": "^10"
   }
 }
