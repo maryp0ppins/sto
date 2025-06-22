@@ -1,10 +1,9 @@
 // createUser.mjs
 import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
 import 'dotenv/config'
 
 const userSchema = new mongoose.Schema({
-  email: String,
+  email: { type: String, required: true, unique: true },
   password: String,
   name: String,
   role: String,
@@ -13,30 +12,46 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema)
 
 const run = async () => {
-  await mongoose.connect(process.env.MONGODB_URI)
+  const uri = process.env.MONGODB_URI
+  if (!uri) {
+    console.error('❌ MONGODB_URI не указан в .env')
+    process.exit(1)
+  }
 
-  await User.deleteMany()
+  try {
+    await mongoose.connect(uri)
+    console.log('🔌 Подключено к MongoDB')
 
-  const adminHash = await bcrypt.hash('admin', 10)
-  const mechHash = await bcrypt.hash('mech', 10)
+    await User.deleteMany()
+    console.log('🧹 Все пользователи удалены')
 
-  await User.create([
-    {
-      email: 'admin',
-      password: adminHash,
-      name: 'Админ',
-      role: 'admin',
-    },
-    {
-      email: 'mech',
-      password: mechHash,
-      name: 'Иван Мастер',
-      role: 'mechanic',
-    },
-  ])
+    const users = [
+      {
+        email: 'admin',
+        password: 'admin', // пароль без хеша
+        name: 'Админ',
+        role: 'admin',
+      },
+      {
+        email: 'mech',
+        password: 'mech', // пароль без хеша
+        name: 'Иван Мастер',
+        role: 'mechanic',
+      },
+    ]
 
-  console.log('✅ Users created')
-  process.exit()
+    await User.create(users)
+
+    console.log('✅ Пользователи созданы:')
+    users.forEach(u => {
+      console.log(`- ${u.email} (${u.role}), пароль: ${u.password}`)
+    })
+
+    process.exit()
+  } catch (err) {
+    console.error('❌ Ошибка:', err)
+    process.exit(1)
+  }
 }
 
 run()
