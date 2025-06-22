@@ -54,7 +54,9 @@ export default function ServicesPage() {
       <div className="space-y-2">
         {list.map(s => (
           <Card key={s._id} className="p-4 flex items-center justify-between">
-            <span>{s.title} — {s.price}₽ ({s.durationMinutes} мин)</span>
+
+            <span>{s.title} — {s.price} lei ({s.durationMinutes} мин)</span>
+
             <Button variant="destructive" size="sm" onClick={() => remove(s._id!)}>
               Удалить
             </Button>
