@@ -47,8 +47,8 @@ export default function StepServices({ onNextAction }: Props) {
 
   return (
     <Card className="w-full max-w-xl space-y-4 p-6">
-      <h2 className="text-xl font-bold">Шаг 2 — услуги</h2>
-      <h2 className="text-xl font-bold">Шаг 3 — услуги</h2>
+            {service.title} — {service.price} lei ({service.durationMinutes} мин)
+          Всего: {total.price} lei • {total.minutes} мин
 
       {loading && <p>Загружаем...</p>}
 

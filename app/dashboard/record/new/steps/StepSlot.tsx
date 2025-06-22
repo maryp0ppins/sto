@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { format, addMinutes } from 'date-fns'
+import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 import { Card } from '@/components/ui/card'
@@ -42,6 +42,21 @@ export default function StepSlot({ context, onNextAction }: Props) {
   const choose = (slot: Slot) => setSelected(slot)
   const next = () => selected && onNextAction({ slot: selected })
 
+  const slotsByMechanic = useMemo(() => {
+    const map = new Map<string, { name: string; slots: Slot[] }>()
+    for (const s of slots) {
+      if (!map.has(s.mechanicId)) {
+        map.set(s.mechanicId, { name: s.mechanicName, slots: [] })
+      }
+      map.get(s.mechanicId)!.slots.push(s)
+    }
+    return Array.from(map.entries()).map(([id, value]) => ({
+      id,
+      name: value.name,
+      slots: value.slots,
+    }))
+  }, [slots])
+
   /* человекочитаемый заголовок */
   const headerDate = useMemo(() => {
     const d = new Date(date)
@@ -73,21 +88,34 @@ export default function StepSlot({ context, onNextAction }: Props) {
         <p className="text-sm text-muted-foreground">Нет свободных слотов</p>
       )}
 
-      <div className="grid gap-2 md:grid-cols-2">
-        {slots.map((slot) => {
-          const start = new Date(slot.start)
-          const end = addMinutes(start, durationMinutes)
-          return (
-            <Button
-              key={slot.start}
-              variant={selected?.start === slot.start ? 'default' : 'outline'}
-              onClick={() => choose(slot)}
-              className="justify-start"
-            >
-              {format(start, 'HH:mm')} – {format(end, 'HH:mm')} • {slot.mechanicName}
-            </Button>
-          )
-        })}
+      <div className="space-y-4">
+        {slotsByMechanic.map((m) => (
+          <div key={m.id} className="space-y-2">
+            <div className="flex items-center gap-2 font-medium">
+              <span>🧑‍🔧</span>
+              <span>{m.name}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {m.slots.map((slot) => {
+                const start = new Date(slot.start)
+                return (
+                  <Button
+                    key={`${slot.mechanicId}-${slot.start}`}
+                    variant={
+                      selected?.start === slot.start &&
+                      selected?.mechanicId === slot.mechanicId
+                        ? 'default'
+                        : 'outline'
+                    }
+                    onClick={() => choose(slot)}
+                  >
+                    {format(start, 'HH:mm')}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       <Button onClick={next} disabled={!selected}>
