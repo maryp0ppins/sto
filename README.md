@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# STO CRM
 
-## Getting Started
+This project is a simple CRM prototype for a car service station.
+It uses **Next.js** with API routes backed by **MongoDB**.
 
-First, run the development server:
+## Setup
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Configure environment in `.env`:
+
+```
+MONGODB_URI=mongodb://localhost/sto
+JWT_SECRET=verysecret
+```
+
+3. Create an admin user
+
+```bash
+npm run create-admin
+```
+
+4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000` and log in with `admin/admin`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Functionality
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Search or create a client
+- Choose or add a vehicle
+- Select services from catalog
+- Pick an available slot and mechanic
+- Confirm to create a visit
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This covers the initial booking flow. Other sections (kanban, reports) are placeholders.

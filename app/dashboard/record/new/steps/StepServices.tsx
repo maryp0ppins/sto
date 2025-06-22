@@ -13,6 +13,13 @@ export default function StepServices({ onNextAction }: Props) {
   const [services, setServices] = useState<Service[]>([])
   const [selected, setSelected] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const total = selected.reduce(
+    (acc, s) => ({
+      price: acc.price + s.price,
+      minutes: acc.minutes + s.durationMinutes,
+    }),
+    { price: 0, minutes: 0 }
+  )
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -40,7 +47,7 @@ export default function StepServices({ onNextAction }: Props) {
 
   return (
     <Card className="w-full max-w-xl space-y-4 p-6">
-      <h2 className="text-xl font-bold">Шаг 2 — услуги</h2>
+      <h2 className="text-xl font-bold">Шаг 3 — услуги</h2>
 
       {loading && <p>Загружаем...</p>}
 
@@ -51,10 +58,16 @@ export default function StepServices({ onNextAction }: Props) {
               checked={selected.some(s => s._id === service._id)}
               onCheckedChange={() => toggleService(service)}
             />
-            {service.title} ({service.durationMinutes} мин)
+            {service.title} — {service.price}₽ ({service.durationMinutes} мин)
           </label>
         ))}
       </div>
+
+      {selected.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Всего: {total.price}₽ • {total.minutes} мин
+        </p>
+      )}
 
       <Button onClick={handleNext} disabled={selected.length === 0}>
         Продолжить →

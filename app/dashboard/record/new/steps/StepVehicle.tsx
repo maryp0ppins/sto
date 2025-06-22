@@ -27,9 +27,11 @@ export default function StepVehicle({ context, onNextAction }: Props) {
     useForm<Form>({ resolver: zodResolver(schema) })
 
   useEffect(() => {
-    fetch(`/api/vehicles?clientId=${clientId}`)
-      .then(r => r.json())
-      .then(setVehicles)
+    const load = async () => {
+      const r = await fetch(`/api/vehicles?clientId=${clientId}`)
+      if (r.ok) setVehicles(await r.json())
+    }
+    load()
   }, [clientId])
 
   const select = (v: Vehicle) => onNextAction({ vehicle: v })
@@ -40,6 +42,7 @@ export default function StepVehicle({ context, onNextAction }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clientId, ...data }),
     })
+    if (!r.ok) return
     const v: Vehicle = await r.json()
     onNextAction({ vehicle: v })
   }
