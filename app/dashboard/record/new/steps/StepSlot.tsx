@@ -14,7 +14,7 @@ type Props = StepProps
 
 /** суммируем минуты выбранных услуг */
 const totalDuration = (services: Service[]) =>
-  services.reduce((acc, s) => acc + s.duration, 0)
+  services.reduce((acc, s) => acc + s.durationMinutes, 0)
 
 export default function StepSlot({ context, onNextAction }: Props) {
   const durationMinutes = totalDuration(context.services ?? [])
