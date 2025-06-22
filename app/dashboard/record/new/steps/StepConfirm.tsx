@@ -31,6 +31,7 @@ export default function StepConfirm({ context }: Props) {
           serviceIds: context.services!.map(s => s._id),
           slotStart:  context.slot!.start,
           slotEnd:    context.slot!.end,
+          mechanicId: context.slot!.mechanicId,
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -50,8 +51,8 @@ export default function StepConfirm({ context }: Props) {
 
       <ul className="text-sm space-y-1">
         <li><b>Клиент:</b> {context.client!.name} ({context.client!.phone})</li>
-        <li><b>Авто:</b> {context.vehicle!.brand} {context.vehicle!.model}</li>
-        <li><b>Услуги:</b> {context.services!.map(s => s.name).join(', ')}</li>
+        <li><b>Авто:</b> {context.vehicle!.make} {context.vehicle!.model}</li>
+        <li><b>Услуги:</b> {context.services!.map(s => s.title).join(', ')}</li>
         <li>
           <b>Время:</b>{' '}
           {format(new Date(context.slot!.start), 'd MMM yyyy HH:mm', { locale: ru })}
