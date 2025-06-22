@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
           start: startDate.toISOString(),
           end: endDate.toISOString(),
           mechanicId: m._id.toString(),
-          mechanicName: m.email
+
+          mechanicName: m.name || m.email
+
         })
       }
     }
