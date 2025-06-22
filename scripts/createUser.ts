@@ -1,32 +1,32 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
+import readline from 'readline'
 import { User } from '../models/User'
 import 'dotenv/config'
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
+}
 
 async function run() {
   await mongoose.connect(process.env.MONGODB_URI!)
 
-  await User.deleteMany({})
+  const email = await ask('Email: ')
+  const name = await ask('Имя: ')
+  const role = await ask('Роль (admin/mechanic): ')
+  const password = await ask('Пароль: ')
+  rl.close()
 
-  const adminHash = await bcrypt.hash('admin', 10)
-  const mechHash = await bcrypt.hash('mech', 10)
+  const hashed = await bcrypt.hash(password, 10)
 
-  await User.create([
-    {
-      email: 'admin',
-      password: adminHash,
-      name: 'Админ',
-      role: 'admin',
-    },
-    {
-      email: 'mech',
-      password: mechHash,
-      name: 'Иван Мастер',
-      role: 'mechanic',
-    },
-  ])
+  await User.create({ email, name, role, password: hashed })
 
-  console.log('✅ Admin and mechanic created')
+  console.log(`✅ Пользователь "${email}" создан`)
   process.exit()
 }
 

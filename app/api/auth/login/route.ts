@@ -9,7 +9,10 @@ export async function POST(req: Request) {
   const { email, password } = await req.json()
 
   const user = await User.findOne({ email })
-  const valid = user && (await bcrypt.compare(password, user.password))
+
+  const valid = user && user.password === password
+
+
   if (!valid) {
     return new Response('Unauthorized', { status: 401 })
   }

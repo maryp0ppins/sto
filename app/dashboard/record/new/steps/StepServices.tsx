@@ -66,6 +66,7 @@ export default function StepServices({ onNextAction }: Props) {
       {selected.length > 0 && (
         <p className="text-sm text-muted-foreground">
           Всего: {total.price} lei • {total.minutes} мин
+
         </p>
       )}
 
