@@ -14,20 +14,26 @@ type Props = StepProps
 
 /** суммируем минуты выбранных услуг */
 const totalDuration = (services: Service[]) =>
-  services.reduce((acc, s) => acc + s.duration, 0)
+  services.reduce((acc, s) => acc + s.durationMinutes, 0)
 
 export default function StepSlot({ context, onNextAction }: Props) {
   const durationMinutes = totalDuration(context.services ?? [])
   const [date, setDate] = useState<string>(() => format(new Date(), 'yyyy-MM-dd'))
   const [slots, setSlots] = useState<Slot[]>([])
+  const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Slot | null>(null)
 
   /** запрашиваем доступные слоты от бэка */
   useEffect(() => {
     const load = async () => {
       const res = await fetch(`/api/slots?date=${date}&duration=${durationMinutes}`)
-      const data: Slot[] = await res.json()
-      setSlots(data)
+      if (res.ok) {
+        const data: Slot[] = await res.json()
+        setSlots(data)
+        setError(null)
+      } else {
+        setError(await res.text())
+      }
     }
     if (durationMinutes) load()
   }, [date, durationMinutes])
@@ -60,6 +66,8 @@ export default function StepSlot({ context, onNextAction }: Props) {
       </div>
 
       <p className="text-muted-foreground">{headerDate}</p>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {slots.length === 0 && (
         <p className="text-sm text-muted-foreground">Нет свободных слотов</p>
