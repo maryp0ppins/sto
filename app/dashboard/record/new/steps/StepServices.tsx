@@ -47,6 +47,7 @@ export default function StepServices({ onNextAction }: Props) {
 
   return (
     <Card className="w-full max-w-xl space-y-4 p-6">
+      <h2 className="text-xl font-bold">Шаг 2 — услуги</h2>
       <h2 className="text-xl font-bold">Шаг 3 — услуги</h2>
 
       {loading && <p>Загружаем...</p>}
@@ -58,6 +59,7 @@ export default function StepServices({ onNextAction }: Props) {
               checked={selected.some(s => s._id === service._id)}
               onCheckedChange={() => toggleService(service)}
             />
+            {service.name} ({service.duration} мин)
             {service.title} — {service.price}₽ ({service.durationMinutes} мин)
           </label>
         ))}
