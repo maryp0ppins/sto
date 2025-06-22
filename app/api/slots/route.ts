@@ -29,23 +29,30 @@ export async function GET(req: NextRequest) {
   const openHour = 9
   const closeHour = 18
   for (const m of mechanics) {
-    for (let hour = openHour; hour <= closeHour - Math.ceil(duration / 60); hour++) {
-      const startDate = new Date(`${dateStr}T${hour.toString().padStart(2,'0')}:00:00`)
-      const endDate = addMinutes(startDate, duration)
-      const overlap = visits.some(v => String(v.mechanicId) === String(m._id) &&
-        !(endDate <= v.slotStart || startDate >= v.slotEnd))
-      if (!overlap && endDate.getHours() <= closeHour) {
-        slots.push({
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
-          mechanicId: m._id.toString(),
+  const mechanicVisits = visits
+    .filter(v => String(v.mechanicId) === String(m._id))
+    .sort((a, b) => a.slotStart.getTime() - b.slotStart.getTime())
 
-          mechanicName: m.name || m.email
+  const startOfDay = new Date(`${dateStr}T${openHour.toString().padStart(2, '0')}:00:00`)
+  const endOfDay = new Date(`${dateStr}T${closeHour.toString().padStart(2, '0')}:00:00`)
 
-        })
-      }
+  for (let time = new Date(startOfDay); addMinutes(time, duration) <= endOfDay; time = addMinutes(time, 30)) {
+    const endTime = addMinutes(time, duration)
+
+    const overlap = mechanicVisits.some(v =>
+      !(endTime <= v.slotStart || time >= v.slotEnd)
+    )
+
+    if (!overlap) {
+      slots.push({
+        start: time.toISOString(),
+        end: endTime.toISOString(),
+        mechanicId: m._id.toString(),
+        mechanicName: m.name || m.email
+      })
     }
   }
+}
 
   return NextResponse.json(slots)
 }
