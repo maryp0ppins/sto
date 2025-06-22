@@ -59,6 +59,7 @@ export default function StepServices({ onNextAction }: Props) {
               onCheckedChange={() => toggleService(service)}
             />
             {service.title} — {service.price}₽ ({service.durationMinutes} мин)
+
           </label>
         ))}
       </div>
