@@ -11,18 +11,18 @@ export type Client = {
 
 export type Vehicle = {
   _id?: string
-  brand: string
+  make: string
   model: string
-  plate: string
+  licensePlate: string
   vin?: string
   year?: number
 }
 
 export type Service = {
   _id: string
-  name: string
+  title: string
   price: number
-  duration: number
+  durationMinutes: number
 }
 
 export type TimeSlot = {
