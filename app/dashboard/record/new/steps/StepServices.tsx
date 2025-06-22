@@ -51,7 +51,7 @@ export default function StepServices({ onNextAction }: Props) {
               checked={selected.some(s => s._id === service._id)}
               onCheckedChange={() => toggleService(service)}
             />
-            {service.name} ({service.duration} мин)
+            {service.title} ({service.durationMinutes} мин)
           </label>
         ))}
       </div>
