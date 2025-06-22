@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { WizardContext } from './types'
-import type { OnNext } from './StepProps'
+import type { OnNext } from '../types'
 
 import StepClient   from './steps/StepClient'
 import StepVehicle  from './steps/StepVehicle'

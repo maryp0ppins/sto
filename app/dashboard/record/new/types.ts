@@ -43,3 +43,7 @@ export type Slot = {
   mechanicId: string
   mechanicName: string
 }
+export type StepProps = {
+  context: WizardContext
+  onNextAction: (data: Partial<WizardContext>) => void
+}
