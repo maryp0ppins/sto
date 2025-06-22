@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input'
 import type { WizardContext, Vehicle } from '@/app/dashboard/record/new/types'
 
 const schema = z.object({
-  brand: z.string().min(2),
+  make: z.string().min(2),
   model: z.string().min(1),
-  plate: z.string().min(5),
+  licensePlate: z.string().min(5),
 })
 type Form = z.infer<typeof schema>
 
@@ -27,9 +27,11 @@ export default function StepVehicle({ context, onNextAction }: Props) {
     useForm<Form>({ resolver: zodResolver(schema) })
 
   useEffect(() => {
-    fetch(`/api/vehicles?clientId=${clientId}`)
-      .then(r => r.json())
-      .then(setVehicles)
+    const load = async () => {
+      const r = await fetch(`/api/vehicles?clientId=${clientId}`)
+      if (r.ok) setVehicles(await r.json())
+    }
+    load()
   }, [clientId])
 
   const select = (v: Vehicle) => onNextAction({ vehicle: v })
@@ -40,6 +42,7 @@ export default function StepVehicle({ context, onNextAction }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clientId, ...data }),
     })
+    if (!r.ok) return
     const v: Vehicle = await r.json()
     onNextAction({ vehicle: v })
   }
@@ -54,7 +57,7 @@ export default function StepVehicle({ context, onNextAction }: Props) {
           <div className="flex flex-col gap-2">
             {vehicles.map(v => (
               <Button key={v._id} variant="outline" onClick={() => select(v)}>
-                {v.brand} {v.model} • {v.plate}
+                {v.make} {v.model} • {v.licensePlate}
               </Button>
             ))}
           </div>
@@ -64,12 +67,12 @@ export default function StepVehicle({ context, onNextAction }: Props) {
 
       <p>Или добавьте новый:</p>
       <form onSubmit={handleSubmit(create)} className="space-y-2">
-        <Input placeholder="Марка" {...register('brand')} />
-        {errors.brand && <small className="text-destructive">{errors.brand.message}</small>}
+        <Input placeholder="Марка" {...register('make')} />
+        {errors.make && <small className="text-destructive">{errors.make.message}</small>}
         <Input placeholder="Модель" {...register('model')} />
         {errors.model && <small className="text-destructive">{errors.model.message}</small>}
-        <Input placeholder="Гос-номер" {...register('plate')} />
-        {errors.plate && <small className="text-destructive">{errors.plate.message}</small>}
+        <Input placeholder="Гос-номер" {...register('licensePlate')} />
+        {errors.licensePlate && <small className="text-destructive">{errors.licensePlate.message}</small>}
         <Button type="submit">Добавить →</Button>
       </form>
     </Card>
