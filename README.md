@@ -18,7 +18,7 @@ MONGODB_URI=mongodb://localhost/sto
 JWT_SECRET=verysecret
 ```
 
-3. Create an admin user
+3. Create admin and demo users
 
 ```bash
 npm run create-admin
@@ -30,7 +30,7 @@ npm run create-admin
 npm run dev
 ```
 
-Visit `http://localhost:3000` and log in with `admin/admin`.
+Visit `http://localhost:3000` and log in with `admin/admin` or `mech/mech`.
 
 ## Functionality
 
@@ -40,4 +40,5 @@ Visit `http://localhost:3000` and log in with `admin/admin`.
 - Pick an available slot and mechanic
 - Confirm to create a visit
 
-This covers the initial booking flow. Other sections (kanban, reports) are placeholders.
+This covers the initial booking flow. Services can be managed on `/dashboard/services`.
+Other sections (kanban, reports) remain placeholders.
