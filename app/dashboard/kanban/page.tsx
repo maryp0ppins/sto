@@ -1,31 +1,51 @@
 'use client'
 
+
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Kanban } from '@/components/kanban' // импорт нового компонента
+import { Visit } from '@/app/dashboard/record/new/types'
+import type { VisitStatus } from '@/app/dashboard/record/new/types'
 
-const statuses = ['scheduled', 'in-progress', 'done', 'delivered'] as const
 
-type Visit = {
-  _id: string
-  clientId: { name: string; phone: string }
-  mechanicId: { _id: string; name: string }
-  slotStart: string
-  slotEnd: string
-  status: typeof statuses[number]
+
+
+const statusMap: Record<VisitStatus, 'backlog' | 'todo' | 'doing' | 'done'> = {
+  scheduled: 'backlog',
+  'in-progress': 'doing',
+  done: 'done',
+  delivered: 'todo',
 }
 
-type Mechanic = { _id: string; name: string; email: string }
+const reverseStatusMap: Record<'backlog' | 'todo' | 'doing' | 'done', VisitStatus> = {
+  backlog: 'scheduled',
+  todo: 'delivered',
+  doing: 'in-progress',
+  done: 'done',
+}
+
+type Mechanic = {
+  _id: string
+  name: string
+  email: string
+}
+
+type KanbanCard = {
+  id: string
+  title: string
+  phone?: string
+  vehicle?: string
+  slotStart?: string
+  slotEnd?: string
+  column: 'backlog' | 'todo' | 'doing' | 'done'
+}
 
 export default function KanbanPage() {
   const user = useAuth()
   const [mechanics, setMechanics] = useState<Mechanic[]>([])
-  const [selected, setSelected] = useState<string>('')
+  const [selected, setSelected] = useState('')
   const [visits, setVisits] = useState<Visit[]>([])
 
-  // load mechanics for admin
   useEffect(() => {
     if (user?.role === 'admin') {
       fetch('/api/mechanics')
@@ -34,10 +54,10 @@ export default function KanbanPage() {
     }
   }, [user])
 
-  // load visits whenever selected mechanic changes or user is mechanic
   useEffect(() => {
     const mechId = user?.role === 'admin' ? selected : user?.id
     if (!mechId) return
+
     fetch(`/api/visits?mechanicId=${mechId}`)
       .then((r) => r.json())
       .then(setVisits)
@@ -50,23 +70,73 @@ export default function KanbanPage() {
       body: JSON.stringify({ id: v._id, ...patch }),
     })
     const mechId = user?.role === 'admin' ? selected : user?.id
-    if (mechId) {
-      const r = await fetch(`/api/visits?mechanicId=${mechId}`)
-      setVisits(await r.json())
-    }
+    if (!mechId) return
+    const r = await fetch(`/api/visits?mechanicId=${mechId}`)
+    setVisits(await r.json())
   }
 
-  const remove = async (id: string) => {
+  const removeVisit = async (id: string) => {
     await fetch(`/api/visits?id=${id}`, { method: 'DELETE' })
     setVisits((prev) => prev.filter((v) => v._id !== id))
   }
 
-  const grouped = statuses.map((s) => ({
-    status: s,
-    items: visits.filter((v) => v.status === s),
-  }))
-
   if (!user) return null
+
+  if (user.role === 'admin' && !selected) {
+    return (
+      <div className="p-4 space-y-4">
+        <h1 className="text-2xl font-bold">Канбан-доска</h1>
+        <p className="text-muted">Сначала выберите механика:</p>
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="border p-2"
+        >
+          <option value="">Выберите механика</option>
+          {mechanics.map((m) => (
+            <option key={m._id} value={m._id}>
+              {m.name || m.email}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  const kanbanCards: KanbanCard[] = visits.map((v) => {
+    const vehicle = v.clientId.vehicles?.[0]
+    return {
+      id: v._id,
+      title: v.clientId.name,
+      phone: v.clientId.phone,
+      vehicle: vehicle
+        ? `${vehicle.make} ${vehicle.model} (${vehicle.licensePlate})`
+        : '',
+      slotStart: v.slotStart,
+      slotEnd: v.slotEnd,
+      column: statusMap[v.status] || 'backlog',
+    }
+  })
+
+  const handleCardsChange = (cards: KanbanCard[]) => {
+    cards.forEach((c) => {
+      const original = visits.find((v) => v._id === c.id)
+      if (!original) return
+
+      const newStatus = reverseStatusMap[c.column]
+      const changedStatus = newStatus !== original.status
+      const changedStart = c.slotStart && c.slotStart !== original.slotStart
+      const changedEnd = c.slotEnd && c.slotEnd !== original.slotEnd
+
+      if (changedStatus || changedStart || changedEnd) {
+        updateVisit(original, {
+          status: newStatus,
+          slotStart: changedStart ? c.slotStart : undefined,
+          slotEnd: changedEnd ? c.slotEnd : undefined,
+        })
+      }
+    })
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -87,69 +157,11 @@ export default function KanbanPage() {
         </select>
       )}
 
-      <div className="grid grid-cols-4 gap-4">
-        {grouped.map((col) => (
-          <div key={col.status} className="space-y-2">
-            <h2 className="font-medium capitalize">{col.status}</h2>
-            {col.items.map((v) => (
-              <Card key={v._id} className="p-2 space-y-2 text-sm">
-                <div>
-                  <b>{v.clientId?.name}</b> {v.clientId?.phone}
-                </div>
-                <div>
-                  {new Date(v.slotStart).toLocaleString()} -{' '}
-                  {new Date(v.slotEnd).toLocaleTimeString()}
-                </div>
-                <select
-                  value={v.status}
-                  onChange={(e) =>
-                    updateVisit(v, { status: e.target.value as Visit['status'] })
-                  }
-                  className="border p-1 w-full"
-                >
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex gap-1">
-                  <Input
-                    type="datetime-local"
-                    value={v.slotStart.slice(0, 16)}
-                    onChange={(e) =>
-                      updateVisit(v, {
-                        slotStart: new Date(e.target.value).toISOString(),
-                      })
-                    }
-                    disabled={user.role !== 'admin'}
-                    className="text-xs"
-                  />
-                  <Input
-                    type="datetime-local"
-                    value={v.slotEnd.slice(0, 16)}
-                    onChange={(e) =>
-                      updateVisit(v, {
-                        slotEnd: new Date(e.target.value).toISOString(),
-                      })
-                    }
-                    className="text-xs"
-                  />
-                  {user.role === 'admin' && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      onClick={() => remove(v._id)}
-                    >
-                      ×
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        ))}
-      </div>
+      <Kanban
+        cards={kanbanCards}
+        onCardsChange={handleCardsChange}
+        onDelete={(id) => removeVisit(id)}
+      />
     </div>
   )
 }

@@ -47,3 +47,14 @@ export type StepProps = {
   context: WizardContext
   onNextAction: (data: Partial<WizardContext>) => void
 }
+
+export type VisitStatus = 'scheduled' | 'in-progress' | 'done' | 'delivered'
+
+export type Visit = {
+  _id: string
+  clientId: Client
+  mechanicId: { _id: string; name: string }
+  slotStart: string
+  slotEnd: string
+  status: VisitStatus
+}

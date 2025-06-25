@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbConnect } from '@/lib/db'
 import { Visit } from '@/models/Visit'
+import '@/models/Client'
+import '@/models/User'
+import '@/models/Service'
+
 
 export async function POST(req: NextRequest) {
   const data = await req.json()
@@ -10,17 +14,26 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  await dbConnect()
-  const mechanicId = req.nextUrl.searchParams.get('mechanicId') || undefined
-  const status = req.nextUrl.searchParams.get('status') || undefined
-  const filter: any = {}
-  if (mechanicId) filter.mechanicId = mechanicId
-  if (status) filter.status = status
-  const visits = await Visit.find(filter)
-    .populate('clientId', 'name phone')
-    .populate('mechanicId', 'name email')
-    .populate('serviceIds')
-  return NextResponse.json(visits)
+  try {
+    await dbConnect()
+
+    const mechanicId = req.nextUrl.searchParams.get('mechanicId') || undefined
+    const status     = req.nextUrl.searchParams.get('status')     || undefined
+
+    const filter: Record<string, unknown> = {}
+    if (mechanicId) filter.mechanicId = mechanicId
+    if (status)     filter.status     = status
+
+    const visits = await Visit.find(filter)
+      .populate('clientId', 'name phone')
+      .populate('mechanicId', 'name email')
+      .populate('serviceIds')
+
+    return NextResponse.json(visits)
+  } catch (err) {
+    console.error('GET /api/visits error:', err)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
 }
 
 export async function PUT(req: NextRequest) {
