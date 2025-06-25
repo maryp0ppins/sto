@@ -21,3 +21,18 @@ export async function POST(req: NextRequest) {
   const vehicle = client.vehicles.at(-1)
   return NextResponse.json(vehicle, { status: 201 })
 }
+
+export async function DELETE(req: NextRequest) {
+  const { clientId, vehicleId } = await req.json()
+  if (!clientId || !vehicleId) {
+    return new NextResponse('Missing ids', { status: 400 })
+  }
+  await dbConnect()
+  const client = await Client.findById(clientId)
+  if (!client) return new NextResponse('Client not found', { status: 404 })
+  const vehicle = client.vehicles.id(vehicleId)
+  if (!vehicle) return new NextResponse('Vehicle not found', { status: 404 })
+  vehicle.deleteOne()
+  await client.save()
+  return new NextResponse(null, { status: 204 })
+}
