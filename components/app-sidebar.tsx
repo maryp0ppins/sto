@@ -21,6 +21,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 const menu = [
   {
@@ -48,11 +49,22 @@ const menu = [
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
+  const user = useAuth()
+
+  const items = user?.role === "mechanic"
+    ? [
+        {
+          label: "Работа",
+          items: [{ href: "/dashboard/kanban", icon: KanbanSquare, title: "Канбан-доска" }],
+        },
+        { label: "Система", items: [{ href: "/logout", icon: LogOut, title: "Выход" }] },
+      ]
+    : menu
 
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarContent>
-        {menu.map((group) => (
+        {items.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

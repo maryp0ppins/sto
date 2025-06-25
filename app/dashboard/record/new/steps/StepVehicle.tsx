@@ -36,6 +36,15 @@ export default function StepVehicle({ context, onNextAction }: Props) {
 
   const select = (v: Vehicle) => onNextAction({ vehicle: v })
 
+  const remove = async (id: string) => {
+    await fetch('/api/vehicles', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, vehicleId: id })
+    })
+    setVehicles(prev => prev.filter(v => v._id !== id))
+  }
+
   const create = async (data: Form) => {
     const r = await fetch('/api/vehicles', {
       method: 'POST',
@@ -56,9 +65,18 @@ export default function StepVehicle({ context, onNextAction }: Props) {
           <p>Выберите:</p>
           <div className="flex flex-col gap-2">
             {vehicles.map(v => (
-              <Button key={v._id} variant="outline" onClick={() => select(v)}>
-                {v.make} {v.model} • {v.licensePlate}
-              </Button>
+              <div key={v._id} className="flex gap-2">
+                <Button variant="outline" onClick={() => select(v)}>
+                  {v.make} {v.model} • {v.licensePlate}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => remove(v._id)}
+                >
+                  ×
+                </Button>
+              </div>
             ))}
           </div>
           <hr className="my-4" />
