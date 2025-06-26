@@ -24,6 +24,7 @@ export type CardType = {
   column: ColumnType
   phone?: string
   vehicle?: string
+  services?: string
   slotStart?: string
   slotEnd?: string
 }
@@ -62,6 +63,10 @@ const Board = ({
 
   /* если прилетели новые props.cards — синхронизируем */
   useEffect(() => setCards(cards), [cards])
+
+  useEffect(() => {
+  console.log('STATE CARDS', stateCards)
+}, [stateCards])
 
   /* отдаём наружу любое изменение */
   useEffect(() => onCardsChange?.(stateCards), [stateCards, onCardsChange])
@@ -238,13 +243,18 @@ const Column = ({
         ))}
 
         <DropIndicator beforeId={null} column={column} />
-        <AddCard column={column} setCards={setCards} />
+        
       </div>
     </div>
   )
 }
+const utcToInput = (iso?: string) =>
+  iso ? iso.replace('Z', '').slice(0, 16) : ''
 
+const inputToUtc = (value: string) =>
+  value ? `${value}:00.000Z` : ''
 /* ── Card ───────────────────────────────────── */
+
 
 type CardProps = CardType & {
   handleDragStart: (e: React.DragEvent, card: CardType) => void
@@ -258,6 +268,7 @@ const Card = ({
   column,
   phone,
   vehicle,
+  services,
   slotStart,
   slotEnd,
   handleDragStart,
@@ -277,6 +288,7 @@ const Card = ({
           column,
           phone,
           vehicle,
+          services,
           slotStart,
           slotEnd,
         })
@@ -286,35 +298,38 @@ const Card = ({
       <div className="text-sm font-semibold text-neutral-100">{title}</div>
       {phone && <div className="text-xs text-neutral-400">📞 {phone}</div>}
       {vehicle && <div className="text-xs text-neutral-400">🚗 {vehicle}</div>}
+      {services && <div className="text-xs text-neutral-400">🛠 {services}</div>}
 
-      {(slotStart || slotEnd) && (
-        <div className="flex flex-col gap-1">
-          {slotStart && (
-            <input
-              type="datetime-local"
-              value={slotStart.slice(0, 16)}
-              onChange={(e) =>
-                onUpdateTime({
-                  slotStart: new Date(e.target.value).toISOString(),
-                })
-              }
-              className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
-            />
-          )}
-          {slotEnd && (
-            <input
-              type="datetime-local"
-              value={slotEnd.slice(0, 16)}
-              onChange={(e) =>
-                onUpdateTime({
-                  slotEnd: new Date(e.target.value).toISOString(),
-                })
-              }
-              className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
-            />
-          )}
-        </div>
-      )}
+
+          {(slotStart || slotEnd) && (
+      <div className="flex flex-col gap-1">
+        {slotStart && (
+          <input
+            type="datetime-local"
+            value={utcToInput(slotStart)}
+            onChange={(e) =>
+              onUpdateTime({
+                slotStart: inputToUtc(e.target.value),
+              })
+            }
+            className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
+          />
+        )}
+        {slotEnd && (
+          <input
+            type="datetime-local"
+            value={utcToInput(slotEnd)}
+            onChange={(e) =>
+              onUpdateTime({
+                slotEnd: inputToUtc(e.target.value),
+              })
+            }
+            className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
+          />
+        )}
+      </div>
+    )}
+
 
       <button
         onClick={onDelete}

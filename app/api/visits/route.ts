@@ -19,16 +19,18 @@ export async function GET(req: NextRequest) {
 
     const mechanicId = req.nextUrl.searchParams.get('mechanicId') || undefined
     const status     = req.nextUrl.searchParams.get('status')     || undefined
+    const from       = req.nextUrl.searchParams.get('from')
+    const to         = req.nextUrl.searchParams.get('to')
 
     const filter: Record<string, unknown> = {}
     if (mechanicId) filter.mechanicId = mechanicId
-    if (status)     filter.status     = status
+    if (status)     filter.status = status
+    if (from && to) filter.slotStart = { $gte: from, $lte: to } // ✅ здесь теперь корректно
 
     const visits = await Visit.find(filter)
-      .populate('clientId', 'name phone')
+      .populate('clientId', 'name phone vehicles')     // 👈 добавь vehicles
       .populate('mechanicId', 'name email')
-      .populate('serviceIds')
-
+      .populate('serviceIds', 'title price') // ✅ ← обязательно так
     return NextResponse.json(visits)
   } catch (err) {
     console.error('GET /api/visits error:', err)

@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +12,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 import {
   PlusSquare,
   KanbanSquare,
@@ -20,29 +20,31 @@ import {
   Wrench,
   Settings,
   LogOut,
-} from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
+} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
+import { LogoutButton } from './ui/logout-button'
+
 
 const menu = [
   {
-    label: "Работа",
+    label: 'Работа',
     items: [
-      { href: "/dashboard/record/new", icon: PlusSquare, title: "Новая запись" },
-      { href: "/dashboard/kanban", icon: KanbanSquare, title: "Канбан-доска" },
+      { href: '/dashboard/record/new', icon: PlusSquare, title: 'Новая запись' },
+      { href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан-доска' },
     ],
   },
   {
-    label: "Справочники",
+    label: 'Справочники',
     items: [
-      { href: "/dashboard/clients", icon: Users, title: "Клиенты" },
-      { href: "/dashboard/services", icon: Wrench, title: "Услуги" },
+      { href: '/dashboard/clients', icon: Users, title: 'Клиенты' },
+      { href: '/dashboard/services', icon: Wrench, title: 'Услуги' },
     ],
   },
   {
-    label: "Система",
+    label: 'Система',
     items: [
-      { href: "/dashboard/settings", icon: Settings, title: "Настройки" },
-      { href: "/logout", icon: LogOut, title: "Выход" },
+      { href: '/dashboard/settings', icon: Settings, title: 'Настройки' },
+      { href: '/logout', icon: LogOut, title: 'Выход' },
     ],
   },
 ]
@@ -51,15 +53,19 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const user = useAuth()
 
-  const items = user?.role === "mechanic"
-    ? [
-        {
-          label: "Работа",
-          items: [{ href: "/dashboard/kanban", icon: KanbanSquare, title: "Канбан-доска" }],
-        },
-        { label: "Система", items: [{ href: "/logout", icon: LogOut, title: "Выход" }] },
-      ]
-    : menu
+  const items =
+    user?.role === 'mechanic'
+      ? [
+          {
+            label: 'Работа',
+            items: [{ href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан-доска' }],
+          },
+          {
+            label: 'Система',
+            items: [{ href: '/logout', icon: LogOut, title: 'Выход' }],
+          },
+        ]
+      : menu
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -75,12 +81,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       asChild
                       isActive={pathname.startsWith(href)}
                       tooltip={title}
-                      /* show иконку даже в «icon-collapse»-режиме */
                     >
-                      <Link href={href} className="flex items-center gap-2">
-                        <Icon className="size-4 shrink-0" />
-                        <span>{title}</span>
-                      </Link>
+                      {title === 'Выход' ? (
+                        <LogoutButton icon={<Icon className="size-4 shrink-0" />} />
+                      ) : (
+                        <Link href={href} className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          <span>{title}</span>
+                        </Link>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

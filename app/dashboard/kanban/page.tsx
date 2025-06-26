@@ -1,13 +1,12 @@
 'use client'
 
-
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { Kanban } from '@/components/kanban' // импорт нового компонента
+import { Kanban } from '@/components/kanban'
 import { Visit } from '@/app/dashboard/record/new/types'
 import type { VisitStatus } from '@/app/dashboard/record/new/types'
-
-
+import { addDays, startOfDay, endOfDay } from 'date-fns'
+import { useMemo } from 'react'
 
 
 const statusMap: Record<VisitStatus, 'backlog' | 'todo' | 'doing' | 'done'> = {
@@ -37,6 +36,7 @@ type KanbanCard = {
   vehicle?: string
   slotStart?: string
   slotEnd?: string
+  services?: string
   column: 'backlog' | 'todo' | 'doing' | 'done'
 }
 
@@ -45,6 +45,12 @@ export default function KanbanPage() {
   const [mechanics, setMechanics] = useState<Mechanic[]>([])
   const [selected, setSelected] = useState('')
   const [visits, setVisits] = useState<Visit[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [dayOffset, setDayOffset] = useState(0)
+ const selectedDate = useMemo(() => {
+  return addDays(new Date(), dayOffset)
+}, [dayOffset])
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -58,10 +64,17 @@ export default function KanbanPage() {
     const mechId = user?.role === 'admin' ? selected : user?.id
     if (!mechId) return
 
-    fetch(`/api/visits?mechanicId=${mechId}`)
-      .then((r) => r.json())
-      .then(setVisits)
-  }, [user, selected])
+    const from = startOfDay(selectedDate).toISOString()
+    const to = endOfDay(selectedDate).toISOString()
+
+     setLoading(true)
+  fetch(`/api/visits?mechanicId=${mechId}&from=${from}&to=${to}`)
+    .then(async (r) => (r.ok ? r.json() : []))
+    .then(setVisits)
+    .finally(() => setLoading(false))
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user, selected, dayOffset])
+
 
   const updateVisit = async (v: Visit, patch: Partial<Visit>) => {
     await fetch('/api/visits', {
@@ -69,9 +82,14 @@ export default function KanbanPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: v._id, ...patch }),
     })
+
     const mechId = user?.role === 'admin' ? selected : user?.id
     if (!mechId) return
-    const r = await fetch(`/api/visits?mechanicId=${mechId}`)
+
+    const from = startOfDay(selectedDate).toISOString()
+    const to = endOfDay(selectedDate).toISOString()
+
+    const r = await fetch(`/api/visits?mechanicId=${mechId}&from=${from}&to=${to}`)
     setVisits(await r.json())
   }
 
@@ -105,13 +123,13 @@ export default function KanbanPage() {
 
   const kanbanCards: KanbanCard[] = visits.map((v) => {
     const vehicle = v.clientId.vehicles?.[0]
+    const services = v.serviceIds?.map(s => s.title).join(', ') || ''
     return {
       id: v._id,
       title: v.clientId.name,
       phone: v.clientId.phone,
-      vehicle: vehicle
-        ? `${vehicle.make} ${vehicle.model} (${vehicle.licensePlate})`
-        : '',
+      vehicle: vehicle ? `${vehicle.make} ${vehicle.model} (${vehicle.licensePlate})` : '',
+      services,
       slotStart: v.slotStart,
       slotEnd: v.slotEnd,
       column: statusMap[v.status] || 'backlog',
@@ -140,7 +158,23 @@ export default function KanbanPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Канбан-доска</h1>
+      <div className="flex items-center gap-2">
+        <button onClick={() => setDayOffset((o) => o - 1)} className="border px-2 rounded">
+          ←
+        </button>
+
+        <span className="font-medium">
+          {selectedDate.toLocaleDateString('ru-RU', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'long',
+          })}
+        </span>
+
+        <button onClick={() => setDayOffset((o) => o + 1)} className="border px-2 rounded">
+          →
+        </button>
+      </div>
 
       {user.role === 'admin' && (
         <select
@@ -157,11 +191,15 @@ export default function KanbanPage() {
         </select>
       )}
 
-      <Kanban
-        cards={kanbanCards}
-        onCardsChange={handleCardsChange}
-        onDelete={(id) => removeVisit(id)}
-      />
+      {loading ? (
+        <p>Загрузка данных...</p>
+      ) : (
+        <Kanban
+          cards={kanbanCards}
+          onCardsChange={handleCardsChange}
+          onDelete={(id) => removeVisit(id)}
+        />
+      )}
     </div>
   )
 }

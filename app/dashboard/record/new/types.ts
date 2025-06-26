@@ -57,4 +57,6 @@ export type Visit = {
   slotStart: string
   slotEnd: string
   status: VisitStatus
+  serviceIds?: Service[]
+  price?: number
 }
