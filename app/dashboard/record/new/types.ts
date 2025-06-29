@@ -34,7 +34,7 @@ export type WizardContext = {
   client?: Client
   vehicle?: Vehicle
   services?: Service[]
-  slot?: TimeSlot
+   slot?: Slot
 }
 
 export type Slot = {

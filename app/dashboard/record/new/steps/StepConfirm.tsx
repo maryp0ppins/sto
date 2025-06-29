@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import type { WizardContext } from '@/app/dashboard/record/new/types'
+import type { WizardContext } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
