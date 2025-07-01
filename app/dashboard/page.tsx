@@ -1,54 +1,49 @@
-// app/dashboard/page.tsx - Современная главная страница
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Calendar,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  Users,
-  Car,
-  Wrench,
-  AlertTriangle,
-  CheckCircle2,
-  Timer,
+import { 
+  Calendar, 
+  DollarSign, 
+  Users, 
+  CheckCircle2, 
+  ArrowUpRight, 
+  ArrowDownRight,
   Activity,
+  Timer,
+  Wrench,
   BarChart3,
-  ArrowUpRight,
-  ArrowDownRight
+  Menu
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { SidebarTrigger } from '@/components/ui/sidebar'
+import { useAuth } from '@/hooks/use-auth'
 
-// Mock data
+// Моковые данные для демонстрации
 const mockStats = {
   todayVisits: 12,
-  todayRevenue: 85000,
+  todayRevenue: 45300,
   activeClients: 8,
-  completedToday: 5,
+  completedToday: 6,
   monthlyGrowth: 15.2,
-  avgServiceTime: 120,
-  popularServices: [
-    { name: 'Замена масла', count: 45, revenue: 157500 },
-    { name: 'Диагностика', count: 32, revenue: 80000 },
-    { name: 'Шиномонтаж', count: 28, revenue: 42000 }
-  ],
   recentActivities: [
-    { id: 1, type: 'completed', client: 'Иван Петров', service: 'Замена масла', time: '10 мин назад' },
-    { id: 2, type: 'started', client: 'Мария Смирнова', service: 'Диагностика', time: '25 мин назад' },
-    { id: 3, type: 'scheduled', client: 'Алексей Козлов', service: 'Развал-схождение', time: '1 час назад' }
+    { id: 1, type: 'completed', message: 'Замена масла для Toyota Camry завершена', time: '10 мин назад', client: 'Иванов А.П.' },
+    { id: 2, type: 'started', message: 'Начат ремонт тормозной системы BMW X5', time: '25 мин назад', client: 'Петров В.С.' },
+    { id: 3, type: 'scheduled', message: 'Новая запись на диагностику двигателя', time: '1 час назад', client: 'Сидорова М.И.' },
+    { id: 4, type: 'completed', message: 'Шиномонтаж Mercedes-Benz C-Class завершен', time: '2 часа назад', client: 'Козлов Д.А.' },
   ],
   upcomingVisits: [
-    { id: 1, client: 'Олег Сидоров', vehicle: 'BMW X5', time: '14:00', service: 'ТО' },
-    { id: 2, client: 'Елена Волкова', vehicle: 'Audi A4', time: '15:30', service: 'Диагностика' },
-    { id: 3, client: 'Дмитрий Федоров', vehicle: 'Mercedes C-Class', time: '16:00', service: 'Замена колодок' }
+    { id: 1, client: 'Новиков С.П.', service: 'ТО-1', time: '14:00', vehicle: 'Audi A4' },
+    { id: 2, client: 'Морозова Е.В.', service: 'Диагностика', time: '15:30', vehicle: 'Hyundai Solaris' },
+    { id: 3, client: 'Волков А.М.', service: 'Замена фильтров', time: '16:00', vehicle: 'Skoda Octavia' },
+  ],
+  popularServices: [
+    { name: 'Замена масла', count: 15, trend: '+8%' },
+    { name: 'Диагностика', count: 12, trend: '+12%' },
+    { name: 'Шиномонтаж', count: 9, trend: '-2%' },
+    { name: 'ТО-1', count: 7, trend: '+5%' },
   ]
 }
 
@@ -59,11 +54,11 @@ const StatCard = ({
   icon: Icon, 
   trend, 
   color = 'default' 
-}: {
+}: { 
   title: string
   value: string | number
   description: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: any
   trend?: { value: number; label: string }
   color?: 'default' | 'success' | 'warning' | 'danger'
 }) => {
@@ -168,23 +163,25 @@ const ActivityFeed = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
             className={cn(
-              "p-3 rounded-lg border",
+              "p-4 rounded-lg border",
               getActivityColor(activity.type)
             )}
           >
             <div className="flex items-start gap-3">
               {getActivityIcon(activity.type)}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  {activity.client}
+                <p className="text-sm font-medium text-foreground">
+                  {activity.message}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {activity.service}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    {activity.client}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {activity.time}
+                  </p>
+                </div>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {activity.time}
-              </span>
             </div>
           </motion.div>
         ))}
@@ -197,43 +194,29 @@ const UpcomingVisits = () => (
   <Card className="border-0 shadow-lg">
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <Clock className="w-5 h-5" />
-        Ближайшие записи
+        <Calendar className="w-5 h-5" />
+        Предстоящие визиты
       </CardTitle>
     </CardHeader>
-    <CardContent className="space-y-4">
+    <CardContent className="space-y-3">
       {mockStats.upcomingVisits.map((visit, index) => (
         <motion.div
           key={visit.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-background/50 to-accent/10 border"
+          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10"
         >
-          <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="text-xs bg-primary/10">
-                {visit.client.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium">{visit.client}</p>
-              <p className="text-xs text-muted-foreground">{visit.vehicle}</p>
-            </div>
+          <div className="flex-1">
+            <p className="font-medium text-sm">{visit.client}</p>
+            <p className="text-xs text-muted-foreground">{visit.vehicle}</p>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="text-xs">
-              {visit.time}
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-1">
-              {visit.service}
-            </p>
+            <p className="text-sm font-medium">{visit.time}</p>
+            <p className="text-xs text-muted-foreground">{visit.service}</p>
           </div>
         </motion.div>
       ))}
-      <Button variant="outline" className="w-full" size="sm">
-        Посмотреть все записи
-      </Button>
     </CardContent>
   </Card>
 )
@@ -242,39 +225,33 @@ const PopularServices = () => (
   <Card className="border-0 shadow-lg">
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <BarChart3 className="w-5 h-5" />
+        <Wrench className="w-5 h-5" />
         Популярные услуги
       </CardTitle>
-      <CardDescription>
-        Топ услуги за последний месяц
-      </CardDescription>
     </CardHeader>
-    <CardContent className="space-y-4">
-      {mockStats.popularServices.map((service, index) => {
-        const maxCount = Math.max(...mockStats.popularServices.map(s => s.count))
-        const percentage = (service.count / maxCount) * 100
-        
-        return (
-          <motion.div
-            key={service.name}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="space-y-2"
-          >
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">{service.name}</span>
-              <div className="text-right">
-                <span className="text-sm font-bold">{service.count}</span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {service.revenue.toLocaleString()}₽
-                </span>
-              </div>
-            </div>
-            <Progress value={percentage} className="h-2" />
-          </motion.div>
-        )
-      })}
+    <CardContent className="space-y-3">
+      {mockStats.popularServices.map((service, index) => (
+        <motion.div
+          key={service.name}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+        >
+          <div>
+            <p className="font-medium text-sm">{service.name}</p>
+            <p className="text-xs text-muted-foreground">{service.count} раз в месяц</p>
+          </div>
+          <div className={cn(
+            "text-xs font-medium px-2 py-1 rounded-full",
+            service.trend.startsWith('+') 
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          )}>
+            {service.trend}
+          </div>
+        </motion.div>
+      ))}
     </CardContent>
   </Card>
 )
@@ -306,7 +283,7 @@ const QuickActions = () => (
 )
 
 export default function ModernDashboard() {
-  const user = useAuth()
+  const { user } = useAuth()
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -323,39 +300,36 @@ export default function ModernDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Welcome Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
-        >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              {greeting()}, {user?.name || 'Пользователь'}!
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {currentTime.toLocaleDateString('ru-RU', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-mono font-bold">
-              {currentTime.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Текущее время
-            </p>
-          </div>
-        </motion.div>
+      {/* Header with Sidebar Toggle */}
+      <div className="flex items-center gap-4 p-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <SidebarTrigger />
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold">
+            {greeting()}, {user?.name || 'Пользователь'}!
+          </h1>
+          <p className="text-muted-foreground">
+            {currentTime.toLocaleDateString('ru-RU', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-mono font-bold">
+            {currentTime.toLocaleTimeString('ru-RU', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Текущее время
+          </p>
+        </div>
+      </div>
 
+      <div className="container mx-auto p-6 space-y-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard

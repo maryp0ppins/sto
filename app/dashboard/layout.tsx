@@ -1,26 +1,17 @@
-// app/layout.tsx - ИСПРАВЛЕННЫЙ для предотвращения гидратации
-import { Inter } from 'next/font/google'
-import { Toaster } from '@/components/ui/toaster'
-import './globals.css'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/app-sidebar'
 
-const inter = Inter({ subsets: ['latin'] })
-
-export const metadata = {
-  title: 'СТО CRM',
-  description: 'Система управления автосервисом',
-}
-
-export default function RootLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="ru" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
         {children}
-        <Toaster />
-      </body>
-    </html>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

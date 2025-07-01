@@ -1,15 +1,13 @@
-// components/ui/logout-button.tsx - Исправленный компонент LogoutButton
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from './button'
+import { LogOut } from 'lucide-react'
 
 interface LogoutButtonProps {
-  icon?: React.ReactNode
   className?: string
 }
 
-export function LogoutButton({ icon, className }: LogoutButtonProps) {
+export function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -27,14 +25,12 @@ export function LogoutButton({ icon, className }: LogoutButtonProps) {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <div 
       onClick={handleLogout}
-      className={className}
+      className={`flex items-center gap-2 cursor-pointer ${className}`}
     >
-      {icon}
-      Выход
-    </Button>
+      <LogOut className="size-4 shrink-0" />
+      <span>Выход</span>
+    </div>
   )
 }
