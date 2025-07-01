@@ -1,24 +1,37 @@
-/* components/ui/kanban.tsx */
+// components/modern-kanban.tsx
 'use client'
 
-import React, {
-  Dispatch,
-  DragEvent,
-  FormEvent,
-  SetStateAction,
-  useEffect,
-  useState,
-} from 'react'
-import { motion } from 'framer-motion'
-import { FiPlus, FiTrash } from 'react-icons/fi'
-import { FaFire } from 'react-icons/fa'
+import React, { useState, useCallback } from 'react'
+import { motion, AnimatePresence, Reorder } from 'framer-motion'
+import { 
+  Clock, 
+  User, 
+  Phone, 
+  Car, 
+  Wrench, 
+  MoreHorizontal,
+  Calendar,
+  DollarSign,
+  CheckCircle2,
+  AlertCircle,
+  Timer,
+  Truck
+} from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-/* ──────────────── PUBLIC API ───────────────── */
+export type ColumnType = 'scheduled' | 'in-progress' | 'done' | 'delivered'
 
-export type ColumnType = 'backlog' | 'todo' | 'doing' | 'done'
-
-export type CardType = {
+export type KanbanCard = {
   id: string
   title: string
   column: ColumnType
@@ -27,435 +40,333 @@ export type CardType = {
   services?: string
   slotStart?: string
   slotEnd?: string
+  mechanicName?: string
+  totalPrice?: number
+  priority?: 'low' | 'medium' | 'high'
+  estimatedDuration?: number
 }
 
-/**
- * Kanban board
- */
-export const Kanban = ({
-  cards = DEFAULT_CARDS,
-  onCardsChange,
-  onDelete,
-}: {
-  cards?: CardType[]
-  onCardsChange?: (cards: CardType[]) => void
-  onDelete?: (id: string) => void
+const columnConfig = {
+  scheduled: {
+    title: 'Запланировано',
+    icon: Calendar,
+    color: 'from-blue-500/20 to-cyan-500/20',
+    borderColor: 'border-blue-200 dark:border-blue-800',
+    badgeColor: 'bg-blue-500',
+    count: 0
+  },
+  'in-progress': {
+    title: 'В работе',
+    icon: Timer,
+    color: 'from-orange-500/20 to-yellow-500/20',
+    borderColor: 'border-orange-200 dark:border-orange-800',
+    badgeColor: 'bg-orange-500',
+    count: 0
+  },
+  done: {
+    title: 'Выполнено',
+    icon: CheckCircle2,
+    color: 'from-green-500/20 to-emerald-500/20',
+    borderColor: 'border-green-200 dark:border-green-800',
+    badgeColor: 'bg-green-500',
+    count: 0
+  },
+  delivered: {
+    title: 'Выдано',
+    icon: Truck,
+    color: 'from-purple-500/20 to-pink-500/20',
+    borderColor: 'border-purple-200 dark:border-purple-800',
+    badgeColor: 'bg-purple-500',
+    count: 0
+  }
+}
+
+const priorityColors = {
+  low: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  high: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+}
+
+const TaskCard = ({ 
+  card, 
+  onMove, 
+  onDelete 
+}: { 
+  card: KanbanCard
+  onMove: (cardId: string, newColumn: ColumnType) => void
+  onDelete: (cardId: string) => void
 }) => {
-  return (
-    <div className={cn('h-screen w-full bg-neutral-900 text-neutral-50')}>
-      <Board cards={cards} onCardsChange={onCardsChange} onDelete={onDelete} />
-    </div>
-  )
-}
+  const [isHovered, setIsHovered] = useState(false)
 
-/* ──────────────── INTERNAL ───────────────── */
-
-const Board = ({
-  cards,
-  onCardsChange,
-  onDelete,
-}: {
-  cards: CardType[]
-  onCardsChange?: (cards: CardType[]) => void
-  onDelete?: (id: string) => void
-}) => {
-  const [stateCards, setCards] = useState<CardType[]>(cards)
-
-  /* если прилетели новые props.cards — синхронизируем */
-  useEffect(() => setCards(cards), [cards])
-
-  useEffect(() => {
-  console.log('STATE CARDS', stateCards)
-}, [stateCards])
-
-  /* отдаём наружу любое изменение */
-  useEffect(() => onCardsChange?.(stateCards), [stateCards, onCardsChange])
-
-  return (
-    <div className="flex h-full w-full gap-3 overflow-scroll p-12">
-      <Column
-        title="Backlog"
-        column="backlog"
-        headingColor="text-neutral-500"
-        cards={stateCards}
-        setCards={setCards}
-        onDelete={onDelete}
-      />
-      <Column
-        title="TODO"
-        column="todo"
-        headingColor="text-yellow-200"
-        cards={stateCards}
-        setCards={setCards}
-        onDelete={onDelete}
-      />
-      <Column
-        title="In progress"
-        column="doing"
-        headingColor="text-blue-200"
-        cards={stateCards}
-        setCards={setCards}
-        onDelete={onDelete}
-      />
-      <Column
-        title="Complete"
-        column="done"
-        headingColor="text-emerald-200"
-        cards={stateCards}
-        setCards={setCards}
-        onDelete={onDelete}
-      />
-      <BurnBarrel setCards={setCards} onDelete={onDelete} />
-    </div>
-  )
-}
-
-/* ── Column ─────────────────────────────────── */
-
-type ColumnProps = {
-  title: string
-  headingColor: string
-  cards: CardType[]
-  column: ColumnType
-  setCards: Dispatch<SetStateAction<CardType[]>>
-  onDelete?: (id: string) => void
-}
-
-const Column = ({
-  title,
-  headingColor,
-  cards,
-  column,
-  setCards,
-  onDelete,
-}: ColumnProps) => {
-  const [active, setActive] = useState(false)
-
-  /* DND helpers – оставляем логику автора */
-  const handleDragStart = (e: React.DragEvent, card: CardType) => {
-    e.dataTransfer.setData('cardId', card.id)
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return ''
+    return new Date(timeStr).toLocaleTimeString('ru', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
   }
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    const cardId = e.dataTransfer.getData('cardId')
-    setActive(false)
-    clearHighlights()
-
-    const indicators = getIndicators()
-    const { element } = getNearestIndicator(e, indicators)
-    const before = element.dataset.before || '-1'
-
-    if (before !== cardId) {
-      let copy = [...cards]
-      let moving = copy.find((c) => c.id === cardId)
-      if (!moving) return
-      moving = { ...moving, column }
-
-      copy = copy.filter((c) => c.id !== cardId)
-
-      const moveToBack = before === '-1'
-      if (moveToBack) copy.push(moving)
-      else {
-        const insertAt = copy.findIndex((c) => c.id === before)
-        copy.splice(insertAt !== -1 ? insertAt : copy.length, 0, moving)
-      }
-
-      setCards(copy)
+  const getStatusActions = (currentColumn: ColumnType) => {
+    const actions = []
+    if (currentColumn === 'scheduled') {
+      actions.push({ label: 'Начать работу', column: 'in-progress' as ColumnType, icon: Timer })
     }
+    if (currentColumn === 'in-progress') {
+      actions.push({ label: 'Завершить', column: 'done' as ColumnType, icon: CheckCircle2 })
+    }
+    if (currentColumn === 'done') {
+      actions.push({ label: 'Выдать клиенту', column: 'delivered' as ColumnType, icon: Truck })
+    }
+    return actions
   }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    highlightIndicator(e)
-    setActive(true)
-  }
-
-  const clearHighlights = (els?: HTMLElement[]) => {
-    ;(els || getIndicators()).forEach((i) => (i.style.opacity = '0'))
-  }
-
-  const highlightIndicator = (e: React.DragEvent) => {
-    const indicators = getIndicators()
-    clearHighlights(indicators)
-    const { element } = getNearestIndicator(e, indicators)
-    element.style.opacity = '1'
-  }
-
-  const getNearestIndicator = (e: React.DragEvent, indicators: HTMLElement[]) => {
-    const DIST = 50
-    return indicators.reduce(
-      (closest, el) => {
-        const box = el.getBoundingClientRect()
-        const offset = e.clientY - (box.top + DIST)
-        return offset < 0 && offset > closest.offset
-          ? { offset, element: el }
-          : closest
-      },
-      { offset: Number.NEGATIVE_INFINITY, element: indicators.at(-1)! }
-    )
-  }
-
-  const getIndicators = () =>
-    Array.from(
-      document.querySelectorAll(
-        `[data-column="${column}"]`
-      ) as unknown as HTMLElement[]
-    )
-
-  const handleDragLeave = () => {
-    clearHighlights()
-    setActive(false)
-  }
-
-  const filtered = cards.filter((c) => c.column === column)
 
   return (
-    <div className="w-56 shrink-0">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className={`font-medium ${headingColor}`}>{title}</h3>
-        <span className="text-sm text-neutral-400">{filtered.length}</span>
-      </div>
-
-      <div
-        onDrop={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        className={cn(
-          'h-full w-full transition-colors',
-          active ? 'bg-neutral-800/50' : 'bg-neutral-800/0'
-        )}
-      >
-        {filtered.map((c) => (
-          <Card
-            key={c.id}
-            {...c}
-            handleDragStart={handleDragStart}
-            onDelete={() => {
-              onDelete?.(c.id)
-              setCards((prev) => prev.filter((x) => x.id !== c.id))
-            }}
-            onUpdateTime={(patch) =>
-              setCards((prev) =>
-                prev.map((x) => (x.id === c.id ? { ...x, ...patch } : x))
-              )
-            }
-          />
-        ))}
-
-        <DropIndicator beforeId={null} column={column} />
-        
-      </div>
-    </div>
-  )
-}
-const utcToInput = (iso?: string) =>
-  iso ? iso.replace('Z', '').slice(0, 16) : ''
-
-const inputToUtc = (value: string) =>
-  value ? `${value}:00.000Z` : ''
-/* ── Card ───────────────────────────────────── */
-
-
-type CardProps = CardType & {
-  handleDragStart: (e: React.DragEvent, card: CardType) => void
-  onDelete: () => void
-  onUpdateTime: (patch: { slotStart?: string; slotEnd?: string }) => void
-}
-
-const Card = ({
-  id,
-  title,
-  column,
-  phone,
-  vehicle,
-  services,
-  slotStart,
-  slotEnd,
-  handleDragStart,
-  onDelete,
-  onUpdateTime,
-}: CardProps) => (
-  <>
-    <DropIndicator beforeId={id} column={column} />
     <motion.div
       layout
-      layoutId={id}
-      draggable
-      onDragStart={(e) =>
-        handleDragStart(e as unknown as React.DragEvent, {
-          id,
-          title,
-          column,
-          phone,
-          vehicle,
-          services,
-          slotStart,
-          slotEnd,
-        })
-      }
-      className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing space-y-2"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      whileHover={{ scale: 1.02 }}
+      className="mb-3"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
     >
-      <div className="text-sm font-semibold text-neutral-100">{title}</div>
-      {phone && <div className="text-xs text-neutral-400">📞 {phone}</div>}
-      {vehicle && <div className="text-xs text-neutral-400">🚗 {vehicle}</div>}
-      {services && <div className="text-xs text-neutral-400">🛠 {services}</div>}
-
-
-          {(slotStart || slotEnd) && (
-      <div className="flex flex-col gap-1">
-        {slotStart && (
-          <input
-            type="datetime-local"
-            value={utcToInput(slotStart)}
-            onChange={(e) =>
-              onUpdateTime({
-                slotStart: inputToUtc(e.target.value),
-              })
-            }
-            className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
-          />
-        )}
-        {slotEnd && (
-          <input
-            type="datetime-local"
-            value={utcToInput(slotEnd)}
-            onChange={(e) =>
-              onUpdateTime({
-                slotEnd: inputToUtc(e.target.value),
-              })
-            }
-            className="w-full rounded bg-neutral-700 p-1 text-xs text-white"
-          />
-        )}
-      </div>
-    )}
-
-
-      <button
-        onClick={onDelete}
-        className="text-xs text-red-400 hover:text-red-200"
-      >
-        Удалить
-      </button>
+      <Card className={cn(
+        "group cursor-pointer transition-all duration-200 border-l-4",
+        columnConfig[card.column].borderColor,
+        "hover:shadow-lg dark:hover:shadow-xl",
+        isHovered && "ring-2 ring-primary/20"
+      )}>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h3 className="font-medium text-sm leading-tight">{card.title}</h3>
+              {card.phone && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Phone className="w-3 h-3" />
+                  {card.phone}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {card.priority && (
+                <Badge 
+                  variant="outline" 
+                  className={cn("text-xs px-1 py-0", priorityColors[card.priority])}
+                >
+                  {card.priority === 'high' ? '🔥' : card.priority === 'medium' ? '⚡' : '📝'}
+                </Badge>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreHorizontal className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {getStatusActions(card.column).map((action) => (
+                    <DropdownMenuItem 
+                      key={action.column}
+                      onClick={() => onMove(card.id, action.column)}
+                      className="flex items-center gap-2"
+                    >
+                      <action.icon className="w-4 h-4" />
+                      {action.label}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuItem 
+                    onClick={() => onDelete(card.id)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    🗑️ Удалить
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pt-0 space-y-3">
+          {card.vehicle && (
+            <div className="flex items-center gap-2 text-xs">
+              <Car className="w-3 h-3 text-muted-foreground" />
+              <span className="font-medium">{card.vehicle}</span>
+            </div>
+          )}
+          
+          {card.services && (
+            <div className="flex items-start gap-2 text-xs">
+              <Wrench className="w-3 h-3 text-muted-foreground mt-0.5" />
+              <span className="line-clamp-2">{card.services}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            {card.slotStart && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatTime(card.slotStart)}
+                {card.slotEnd && ` - ${formatTime(card.slotEnd)}`}
+              </div>
+            )}
+            {card.totalPrice && (
+              <div className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+                <DollarSign className="w-3 h-3" />
+                {card.totalPrice}₽
+              </div>
+            )}
+          </div>
+          
+          {card.mechanicName && (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <Avatar className="w-5 h-5">
+                <AvatarFallback className="text-xs bg-primary/10">
+                  {card.mechanicName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs text-muted-foreground">{card.mechanicName}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </motion.div>
-  </>
-)
+  )
+}
 
-/* ── DropIndicator ──────────────────────────── */
-
-const DropIndicator = ({ beforeId, column }: { beforeId: string | null; column: string }) => (
-  <div
-    data-before={beforeId || '-1'}
-    data-column={column}
-    className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0"
-  />
-)
-
-/* ── BurnBarrel (удалить карточку перетаскиванием) ─── */
-
-const BurnBarrel = ({
-  setCards,
-  onDelete,
+const Column = ({ 
+  column, 
+  cards, 
+  onCardsChange,
+  onDelete 
 }: {
-  setCards: Dispatch<SetStateAction<CardType[]>>
-  onDelete?: (id: string) => void
+  column: ColumnType
+  cards: KanbanCard[]
+  onCardsChange: (cards: KanbanCard[]) => void
+  onDelete: (cardId: string) => void
 }) => {
-  const [active, setActive] = useState(false)
+  const config = columnConfig[column]
+  const Icon = config.icon
+  const columnCards = cards.filter(card => card.column === column)
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setActive(true)
-  }
-
-  const handleDragLeave = () => setActive(false)
-
-  const handleDrop = (e: React.DragEvent) => {
-    const cardId = e.dataTransfer.getData('cardId')
-    setCards((prev) => prev.filter((c) => c.id !== cardId))
-    onDelete?.(cardId)
-    setActive(false)
+  const handleMove = (cardId: string, newColumn: ColumnType) => {
+    const updatedCards = cards.map(card => 
+      card.id === cardId ? { ...card, column: newColumn } : card
+    )
+    onCardsChange(updatedCards)
   }
 
   return (
-    <div
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      className={cn(
-        'mt-10 grid h-56 w-56 shrink-0 place-content-center rounded border text-3xl',
-        active
-          ? 'border-red-800 bg-red-800/20 text-red-500'
-          : 'border-neutral-500 bg-neutral-500/20 text-neutral-500'
-      )}
+    <motion.div
+      layout
+      className="flex-1 min-w-80"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: Object.keys(columnConfig).indexOf(column) * 0.1 }}
     >
-      {active ? <FaFire className="animate-bounce" /> : <FiTrash />}
+      <div className={cn(
+        "h-full rounded-xl border bg-gradient-to-br backdrop-blur-sm",
+        config.color,
+        config.borderColor
+      )}>
+        <div className="p-4 border-b bg-background/50 rounded-t-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "p-2 rounded-lg text-white",
+                config.badgeColor
+              )}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-sm">{config.title}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {columnCards.length} задач
+                </p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {columnCards.length}
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="p-4 h-[calc(100vh-12rem)] overflow-y-auto">
+          <AnimatePresence>
+            <Reorder.Group
+              axis="y"
+              values={columnCards}
+              onReorder={(reorderedCards) => {
+                const otherCards = cards.filter(card => card.column !== column)
+                onCardsChange([...otherCards, ...reorderedCards])
+              }}
+              className="space-y-0"
+            >
+              {columnCards.map((card) => (
+                <Reorder.Item
+                  key={card.id}
+                  value={card}
+                  className="list-none"
+                >
+                  <TaskCard
+                    card={card}
+                    onMove={handleMove}
+                    onDelete={onDelete}
+                  />
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+          </AnimatePresence>
+          
+          {columnCards.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center h-32 text-muted-foreground"
+            >
+              <Icon className="w-8 h-8 mb-2 opacity-50" />
+              <p className="text-sm">Пусто</p>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+export default function ModernKanban({ 
+  cards = [], 
+  onCardsChange,
+  onDelete 
+}: {
+  cards: KanbanCard[]
+  onCardsChange?: (cards: KanbanCard[]) => void
+  onDelete?: (cardId: string) => void
+}) {
+  const handleCardsChange = useCallback((newCards: KanbanCard[]) => {
+    onCardsChange?.(newCards)
+  }, [onCardsChange])
+
+  const handleDelete = useCallback((cardId: string) => {
+    onDelete?.(cardId)
+  }, [onDelete])
+
+  return (
+    <div className="h-full bg-gradient-to-br from-background via-background to-accent/5">
+      <div className="flex gap-6 p-6 h-full overflow-x-auto">
+        {(Object.keys(columnConfig) as ColumnType[]).map((column) => (
+          <Column
+            key={column}
+            column={column}
+            cards={cards}
+            onCardsChange={handleCardsChange}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
     </div>
   )
 }
-
-/* ── AddCard (demonstration, остаётся) ───────── */
-
-const AddCard = ({
-  column,
-  setCards,
-}: {
-  column: ColumnType
-  setCards: Dispatch<SetStateAction<CardType[]>>
-}) => {
-  const [text, setText] = useState('')
-  const [adding, setAdding] = useState(false)
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (!text.trim()) return
-    setCards((prev) => [
-      ...prev,
-      { id: Math.random().toString(), title: text.trim(), column },
-    ])
-    setText('')
-    setAdding(false)
-  }
-
-  return adding ? (
-    <motion.form layout onSubmit={handleSubmit}>
-      <textarea
-        autoFocus
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Add new task…"
-        className="w-full rounded border border-violet-400 bg-violet-400/20 p-3 text-sm placeholder-violet-300 focus:outline-0"
-      />
-      <div className="mt-1.5 flex justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={() => setAdding(false)}
-          className="px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-50"
-        >
-          Close
-        </button>
-        <button
-          type="submit"
-          className="flex items-center gap-1.5 rounded bg-neutral-50 px-3 py-1.5 text-xs text-neutral-950 hover:bg-neutral-300"
-        >
-          <span>Add</span>
-          <FiPlus />
-        </button>
-      </div>
-    </motion.form>
-  ) : (
-    <motion.button
-      layout
-      onClick={() => setAdding(true)}
-      className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-50"
-    >
-      <span>Add card</span>
-      <FiPlus />
-    </motion.button>
-  )
-}
-
-/* ── Дефолтные демо-карты ───────────────────── */
-
-const DEFAULT_CARDS: CardType[] = [
-  { id: '1', title: 'Demo task', column: 'backlog' },
-]

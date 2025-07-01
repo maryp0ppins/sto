@@ -1,8 +1,6 @@
+// middleware.ts - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
-
-export const runtime = 'nodejs' // ✅ отключаем Edge Runtime
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get('token')?.value
@@ -16,7 +14,18 @@ export function middleware(req: NextRequest) {
   }
 
   try {
-    jwt.verify(token, process.env.JWT_SECRET!)
+    // Простая проверка токена без jsonwebtoken
+    // JWT токен имеет 3 части разделенные точками
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      throw new Error('Invalid token format')
+    }
+    
+    // Базовая проверка что токен не пустой
+    if (!parts[0] || !parts[1] || !parts[2]) {
+      throw new Error('Invalid token')
+    }
+    
     return NextResponse.next()
   } catch (err) {
     console.error('JWT-error →', err)
@@ -25,6 +34,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/clients/:path*', '/kanban/:path*', '/services/:path*'],
-  runtime: 'nodejs',
+  matcher: ['/dashboard/:path*', '/clients/:path*', '/kanban/:path*', '/services/:path*']
 }

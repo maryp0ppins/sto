@@ -1,32 +1,40 @@
+// components/ui/logout-button.tsx - Исправленный компонент LogoutButton
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React from 'react'
-import { SidebarMenuButton } from '@/components/ui/sidebar'
+import { Button } from './button'
 
-export function LogoutButton({ icon }: { icon: React.ReactNode }) {
+interface LogoutButtonProps {
+  icon?: React.ReactNode
+  className?: string
+}
+
+export function LogoutButton({ icon, className }: LogoutButtonProps) {
   const router = useRouter()
 
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault()
+  const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST' })
-      if (res.ok) {
-        router.push('/login')
-      } else {
-        console.error('Logout failed')
-      }
-    } catch (err) {
-      console.error('Logout error:', err)
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
     }
   }
 
   return (
-    <SidebarMenuButton asChild tooltip="Выход">
-      <button onClick={handleLogout} className="flex items-center gap-2">
-        {icon}
-        <span>Выход</span>
-      </button>
-    </SidebarMenuButton>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleLogout}
+      className={className}
+    >
+      {icon}
+      Выход
+    </Button>
   )
 }

@@ -1,14 +1,26 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+// app/layout.tsx - ИСПРАВЛЕННЫЙ для предотвращения гидратации
+import { Inter } from 'next/font/google'
+import { Toaster } from '@/components/ui/toaster'
+import './globals.css'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = {
+  title: 'СТО CRM',
+  description: 'Система управления автосервисом',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main>
-        <SidebarTrigger />
+    <html lang="ru" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         {children}
-      </main>
-    </SidebarProvider>
+        <Toaster />
+      </body>
+    </html>
   )
 }
