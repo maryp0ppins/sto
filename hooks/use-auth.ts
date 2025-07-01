@@ -1,17 +1,36 @@
-"use client"
-import { useEffect, useState } from 'react'
+// hooks/use-auth.ts - Исправленный хук аутентификации
+'use client'
 
-export type UserInfo = { id: string; role: string } | null | undefined
+import { useEffect, useState } from 'react'
+import { User } from '@/types/user'
 
 export function useAuth() {
-  const [user, setUser] = useState<UserInfo>(undefined) // undefined = loading
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' }) // обязательно!
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setUser)
-      .catch(() => setUser(null))
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
   }, [])
 
-  return user
+  return { user, loading }
 }

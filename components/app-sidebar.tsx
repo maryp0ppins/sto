@@ -1,3 +1,4 @@
+// components/app-sidebar.tsx - ИСПРАВЛЕННЫЙ ЭКСПОРТ
 'use client'
 
 import Link from 'next/link'
@@ -23,7 +24,6 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { LogoutButton } from './ui/logout-button'
-
 
 const menu = [
   {
@@ -51,7 +51,7 @@ const menu = [
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  const user = useAuth()
+  const { user } = useAuth()
 
   const items =
     user?.role === 'mechanic'
@@ -83,7 +83,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       tooltip={title}
                     >
                       {title === 'Выход' ? (
-                        <LogoutButton icon={<Icon className="size-4 shrink-0" />} />
+                        <LogoutButton />
                       ) : (
                         <Link href={href} className="flex items-center gap-2">
                           <Icon className="size-4 shrink-0" />
@@ -102,3 +102,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   )
 }
+
+// По умолчанию экспорт для обратной совместимости
+export default AppSidebar

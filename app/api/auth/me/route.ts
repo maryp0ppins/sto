@@ -1,22 +1,34 @@
-import { cookies } from 'next/headers'
+// app/api/auth/me/route.ts - API для получения информации о пользователе
+import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { dbConnect } from '@/lib/db'
+import { User } from '@/models/User'
 
-export async function GET() {
-  const cookieStore = cookies(); // ✅ synchronous
-  const token = (await cookieStore).get('token')?.value;
-
-  if (!token) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string;
-      role: string;
-    };
+    const token = req.cookies.get('token')?.value
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    return Response.json({ id: payload.id, role: payload.role });
-  } catch {
-    return new Response('Unauthorized', { status: 401 });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, role: string }
+    
+    await dbConnect()
+    const user = await User.findById(decoded.id).select('-password')
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    })
+  } catch (error) {
+    console.error('Auth error:', error)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 }
