@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { 
   Calendar, 
   DollarSign, 
@@ -12,8 +13,8 @@ import {
   Activity,
   Timer,
   Wrench,
-  BarChart3,
-  Menu
+  Plus,
+  ExternalLink
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -128,6 +129,36 @@ const StatCard = ({
   )
 }
 
+const NewRecordButton = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Card className="border-0 shadow-xl bg-gradient-to-br from-primary/10 via-primary/5 to-background">
+      <CardContent className="p-6">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
+            <Plus className="w-8 h-8 text-primary-foreground" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold mb-2">Новая запись</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Создать новую запись клиента на обслуживание
+            </p>
+            <Button asChild size="lg" className="w-full">
+              <Link href="/dashboard/record/new">
+                Создать запись
+                <ArrowUpRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+)
+
 const ActivityFeed = () => {
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -193,10 +224,18 @@ const ActivityFeed = () => {
 const UpcomingVisits = () => (
   <Card className="border-0 shadow-lg">
     <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Calendar className="w-5 h-5" />
-        Предстоящие визиты
-      </CardTitle>
+      <div className="flex items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="w-5 h-5" />
+          Предстоящие визиты
+        </CardTitle>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/visits">
+            Все визиты
+            <ExternalLink className="w-3 h-3 ml-1" />
+          </Link>
+        </Button>
+      </div>
     </CardHeader>
     <CardContent className="space-y-3">
       {mockStats.upcomingVisits.map((visit, index) => (
@@ -205,7 +244,8 @@ const UpcomingVisits = () => (
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.1 }}
-          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10"
+          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 hover:bg-primary/10 transition-colors cursor-pointer"
+          onClick={() => window.location.href = '/dashboard/visits'}
         >
           <div className="flex-1">
             <p className="font-medium text-sm">{visit.client}</p>
@@ -252,32 +292,6 @@ const PopularServices = () => (
           </div>
         </motion.div>
       ))}
-    </CardContent>
-  </Card>
-)
-
-const QuickActions = () => (
-  <Card className="border-0 shadow-lg bg-gradient-to-br from-primary/5 to-primary/10">
-    <CardHeader>
-      <CardTitle>Быстрые действия</CardTitle>
-    </CardHeader>
-    <CardContent className="grid grid-cols-2 gap-3">
-      <Button className="h-auto p-4 flex-col gap-2" variant="outline">
-        <Users className="w-5 h-5" />
-        <span className="text-xs">Новый клиент</span>
-      </Button>
-      <Button className="h-auto p-4 flex-col gap-2" variant="outline">
-        <Calendar className="w-5 h-5" />
-        <span className="text-xs">Запись</span>
-      </Button>
-      <Button className="h-auto p-4 flex-col gap-2" variant="outline">
-        <Wrench className="w-5 h-5" />
-        <span className="text-xs">Услуги</span>
-      </Button>
-      <Button className="h-auto p-4 flex-col gap-2" variant="outline">
-        <BarChart3 className="w-5 h-5" />
-        <span className="text-xs">Отчеты</span>
-      </Button>
     </CardContent>
   </Card>
 )
@@ -366,17 +380,21 @@ export default function ModernDashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column - New Record Button */}
+          <div className="lg:col-span-1">
+            <NewRecordButton />
+          </div>
+
+          {/* Middle Column */}
           <div className="lg:col-span-2 space-y-6">
             <ActivityFeed />
             <PopularServices />
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="lg:col-span-1 space-y-6">
             <UpcomingVisits />
-            <QuickActions />
           </div>
         </div>
       </div>
