@@ -1,7 +1,7 @@
 // contexts/visits-context.tsx
 'use client'
 
-import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect, useState, useRef } from 'react'
 import { visitsAPI, type Visit } from '@/lib/api'
 
 export interface VisitsFilters {
@@ -79,6 +79,7 @@ function visitsReducer(state: VisitsState, action: VisitsAction): VisitsState {
 interface VisitsContextType {
   state: VisitsState
   fetchVisits: (filters?: VisitsFilters) => Promise<void>
+  fetchVisitsSilently: (filters?: VisitsFilters) => Promise<void>
   updateVisit: (id: string, data: Partial<Visit>) => Promise<void>
   deleteVisit: (id: string) => Promise<void>
   clearCache: () => void
@@ -86,25 +87,11 @@ interface VisitsContextType {
 
 const VisitsContext = createContext<VisitsContextType | undefined>(undefined)
 
-const CACHE_DURATION = 30000 // 30 секунд
-
 export function VisitsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(visitsReducer, initialState)
 
+  // Простой fetch для пользовательских действий (с лоадером)
   const fetchVisits = useCallback(async (filters: VisitsFilters = {}) => {
-    const now = Date.now()
-    const filtersKey = JSON.stringify(filters)
-    const currentFiltersKey = JSON.stringify(state.currentFilters)
-    
-    // Проверяем, нужно ли делать запрос
-    const filtersChanged = filtersKey !== currentFiltersKey
-    const cacheExpired = now - state.lastFetch > CACHE_DURATION
-    const hasData = state.visits.length > 0
-
-    if (!filtersChanged && !cacheExpired && hasData && !state.loading) {
-      return // Не делаем запрос, данные актуальные
-    }
-
     dispatch({ type: 'FETCH_START', filters })
 
     try {
@@ -116,7 +103,19 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
         error: error instanceof Error ? error.message : 'Unknown error' 
       })
     }
-  }, [state.currentFilters, state.lastFetch, state.visits.length, state.loading])
+  }, [])
+
+  // Тихое обновление для фоновых запросов (без лоадера)
+  const fetchVisitsSilently = useCallback(async (filters: VisitsFilters = {}) => {
+    try {
+      const visits = await visitsAPI.getAll(filters)
+      // Обновляем только данные, без лоадера
+      dispatch({ type: 'FETCH_SUCCESS', visits: visits || [] })
+    } catch (error) {
+      // Тихо игнорируем ошибки фонового обновления
+      console.debug('Background fetch failed:', error)
+    }
+  }, [])
 
   const updateVisit = useCallback(async (id: string, data: Partial<Visit>) => {
     try {
@@ -148,13 +147,14 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'CLEAR_CACHE' })
   }, [])
 
-  const contextValue: VisitsContextType = {
+  const contextValue: VisitsContextType = useMemo(() => ({
     state,
     fetchVisits,
+    fetchVisitsSilently,
     updateVisit,
     deleteVisit,
     clearCache
-  }
+  }), [state, fetchVisits, fetchVisitsSilently, updateVisit, deleteVisit, clearCache])
 
   return (
     <VisitsContext.Provider value={contextValue}>
@@ -171,57 +171,87 @@ export function useVisitsContext() {
   return context
 }
 
-// Основной хук для использования визитов
+// Основной хук для использования визитов с умным обновлением
 export function useVisits(filters?: VisitsFilters) {
-  const { state, fetchVisits } = useVisitsContext()
+  const { state, fetchVisits, fetchVisitsSilently } = useVisitsContext()
+  const filtersRef = useRef<VisitsFilters | undefined>(undefined)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
-  // Мемоизируем фильтры для стабильности
-  const stableFilters = useMemo(() => filters, [
-    filters,
-    filters?.mechanicId,
-    filters?.status, 
-    filters?.from,
-    filters?.to
-  ])
-
+  // Только при изменении фильтров
+  const filtersChanged = JSON.stringify(filtersRef.current) !== JSON.stringify(filters)
+  
   useEffect(() => {
-    fetchVisits(stableFilters)
-  }, [fetchVisits, stableFilters])
+    if (!hasInitialized || filtersChanged) {
+      filtersRef.current = filters
+      fetchVisits(filters)
+      setHasInitialized(true)
+    }
+  }, [fetchVisits, filtersChanged, hasInitialized, filters])
+
+  // Автообновление каждые 2 минуты только для активной вкладки БЕЗ лоадера
+  useEffect(() => {
+    if (!hasInitialized) return
+
+    const interval = setInterval(() => {
+      // Обновляем только если вкладка активна, БЕЗ лоадера
+      if (!document.hidden) {
+        fetchVisitsSilently(filtersRef.current)
+      }
+    }, 120000) // 2 минуты
+
+    return () => clearInterval(interval)
+  }, [fetchVisitsSilently, hasInitialized])
 
   return {
     data: state.visits,
     loading: state.loading,
     error: state.error,
-    refetch: () => fetchVisits(stableFilters)
+    refetch: () => fetchVisits(filters)
   }
 }
 
-// Хук для мутаций
+// Хук для мутаций с оптимистичными обновлениями
 export function useVisitMutations() {
   const { updateVisit, deleteVisit } = useVisitsContext()
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleUpdate = async (id: string, data: Partial<Visit>) => {
+  const handleUpdate = useCallback(async (id: string, data: Partial<Visit>) => {
     setLoading(true)
     try {
       await updateVisit(id, data)
+      // Локальное обновление уже произошло в updateVisit через dispatch
     } finally {
       setLoading(false)
     }
-  }
+  }, [updateVisit])
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     setLoading(true)
     try {
       await deleteVisit(id)
+      // Локальное удаление уже произошло в deleteVisit через dispatch
     } finally {
       setLoading(false)
     }
-  }
+  }, [deleteVisit])
+
+  const handleCreate = useCallback(async (data: Omit<Visit, '_id'>) => {
+    setLoading(true)
+    try {
+      const result = await visitsAPI.create(data)
+      // После создания можно принудительно обновить если нужно
+      return result
+    } catch (error) {
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   return {
     updateVisit: handleUpdate,
     deleteVisit: handleDelete,
+    createVisit: handleCreate,
     loading
   }
 }

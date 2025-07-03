@@ -1,10 +1,8 @@
+// app/dashboard/record/new/page.tsx
 'use client'
-import Wizard from './Wizard'
+
+import ModernBookingWizard from './ModernWizard'
 
 export default function RecordNewPage() {
-  return (
-    <div className="flex flex-col items-center py-8">
-      <Wizard />
-    </div>
-  )
+  return <ModernBookingWizard />
 }
