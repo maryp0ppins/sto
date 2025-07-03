@@ -148,7 +148,7 @@ function ServiceForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="price">Цена (₽) *</Label>
+          <Label htmlFor="price">Цена (MDL) *</Label>
           <Input
             id="price"
             type="number"
@@ -439,7 +439,7 @@ export default function ModernServicesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Средняя цена</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {stats.avgPrice.toLocaleString()}₽
+                    {stats.avgPrice.toLocaleString()}MDL
                   </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-blue-600" />
@@ -540,7 +540,7 @@ export default function ModernServicesPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <DollarSign className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-semibold">{service.price.toLocaleString()} ₽</span>
+                            <span className="font-semibold">{service.price.toLocaleString()} MDL</span>
                           </div>
                         </div>
                         
@@ -605,7 +605,7 @@ export default function ModernServicesPage() {
                     </TableCell>
                     <TableCell>{service.durationMinutes} мин</TableCell>
                     <TableCell className="font-medium">
-                      {service.price.toLocaleString()} ₽
+                      {service.price.toLocaleString()} MDL
                     </TableCell>
                     <TableCell>
                       {service.difficulty && (

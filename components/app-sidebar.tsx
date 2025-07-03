@@ -103,7 +103,7 @@ const QuickStats = () => (
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Выручка</span>
-          <span className="font-medium text-green-600">45,300₽</span>
+          <span className="font-medium text-green-600">45,300MDL</span>
         </div>
       </div>
     </CardContent>

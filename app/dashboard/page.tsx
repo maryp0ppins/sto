@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { type Visit } from '@/lib/api'
 import { 
   Calendar, 
-  DollarSign, 
+  CreditCard, 
   Users, 
   CheckCircle2, 
   ArrowUpRight, 
@@ -409,9 +409,9 @@ export default function DashboardPage() {
           
           <StatCard
             title="Выручка сегодня"
-            value={`${stats.todayRevenue.toLocaleString()}₽`}
+            value={`${stats.todayRevenue.toLocaleString()}MDL`}
             description="От завершенных работ"
-            icon={DollarSign}
+            icon={CreditCard}
             color="green"
             loading={loading}
           />
@@ -466,11 +466,17 @@ export default function DashboardPage() {
 
           {/* Upcoming Visits */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
                 Ближайшие визиты
               </CardTitle>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard/visits">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Все визиты
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent>
               {loading ? (

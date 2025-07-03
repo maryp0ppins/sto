@@ -254,29 +254,36 @@ export default function VisitsPage() {
   const filteredVisits = useMemo(() => {
     if (!visits || visits.length === 0) return []
     
-    return visits.filter((visit: Visit) => {
-      const client = typeof visit.clientId === 'object' ? visit.clientId : null
-      const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
-        ? visit.serviceIds as { title?: string }[] 
-        : []
-      
-      const matchesSearch = 
-        client?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client?.phone.includes(searchTerm) ||
-        services.some(service => service.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-      
-      const matchesStatus = statusFilter === 'all' || visit.status === statusFilter
-      
-      const visitDate = new Date(visit.slotStart).toDateString()
-      const today = new Date().toDateString()
-      const yesterday = new Date(Date.now() - 86400000).toDateString()
-      
-      const matchesDate = dateFilter === 'all' || 
-                         (dateFilter === 'today' && visitDate === today) ||
-                         (dateFilter === 'yesterday' && visitDate === yesterday)
-      
-      return matchesSearch && matchesStatus && matchesDate
-    })
+    return visits
+      .filter((visit: Visit) => {
+        const client = typeof visit.clientId === 'object' ? visit.clientId : null
+        const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
+          ? visit.serviceIds as { title?: string }[] 
+          : []
+        
+        const matchesSearch = 
+          client?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          client?.phone.includes(searchTerm) ||
+          services.some(service => service.title?.toLowerCase().includes(searchTerm.toLowerCase()))
+        
+        const matchesStatus = statusFilter === 'all' || visit.status === statusFilter
+        
+        const visitDate = new Date(visit.slotStart).toDateString()
+        const today = new Date().toDateString()
+        const yesterday = new Date(Date.now() - 86400000).toDateString()
+        
+        const matchesDate = dateFilter === 'all' || 
+                          (dateFilter === 'today' && visitDate === today) ||
+                          (dateFilter === 'yesterday' && visitDate === yesterday)
+        
+        return matchesSearch && matchesStatus && matchesDate
+      })
+      // ДОБАВЛЯЕМ СОРТИРОВКУ ПО ПОСЛЕДНИМ ИЗМЕНЕНИЯМ
+      .sort((a: Visit, b: Visit) => {
+        const aTime = new Date(a.updatedAt || a.createdAt || a.slotStart).getTime()
+        const bTime = new Date(b.updatedAt || b.createdAt || b.slotStart).getTime()
+        return bTime - aTime // Новые сверху
+      })
   }, [visits, searchTerm, statusFilter, dateFilter])
 
   const stats = useMemo(() => {
@@ -299,13 +306,15 @@ export default function VisitsPage() {
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
-      await updateVisit(id, { status: status as Visit['status'] })
+      await updateVisit(id, { 
+        status: status as Visit['status'],
+        updatedAt: new Date().toISOString() // Добавляем время обновления
+      })
       refetch()
     } catch (error) {
       console.error('Failed to update visit status:', error)
     }
   }
-
   const handleEdit = (visit: Visit) => {
     // TODO: Implement edit functionality
     console.log('Edit visit:', visit)

@@ -1,8 +1,8 @@
-// components/modern-kanban.tsx
+// components/kanban-fixed.tsx
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { motion, AnimatePresence, Reorder } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Clock, 
   User, 
@@ -87,6 +87,7 @@ const priorityColors = {
   high: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
 }
 
+// Improved TaskCard with native drag and drop
 const TaskCard = ({ 
   card, 
   onMove, 
@@ -96,64 +97,100 @@ const TaskCard = ({
   onMove: (cardId: string, newColumn: ColumnType) => void
   onDelete: (cardId: string) => void
 }) => {
-  const [isHovered, setIsHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const formatTime = (timeStr?: string) => {
     if (!timeStr) return ''
-    return new Date(timeStr).toLocaleTimeString('ru', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+    try {
+      return new Date(timeStr).toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return timeStr
+    }
   }
 
   const getStatusActions = (currentColumn: ColumnType) => {
     const actions = []
-    if (currentColumn === 'scheduled') {
-      actions.push({ label: 'Начать работу', column: 'in-progress' as ColumnType, icon: Timer })
+    
+    switch (currentColumn) {
+      case 'scheduled':
+        actions.push({ column: 'in-progress' as ColumnType, label: 'Начать работу', icon: Timer })
+        break
+      case 'in-progress':
+        actions.push({ column: 'done' as ColumnType, label: 'Завершить', icon: CheckCircle2 })
+        break
+      case 'done':
+        actions.push({ column: 'delivered' as ColumnType, label: 'Выдать клиенту', icon: Truck })
+        break
+      case 'delivered':
+        actions.push({ column: 'scheduled' as ColumnType, label: 'Вернуть в работу', icon: Calendar })
+        break
     }
-    if (currentColumn === 'in-progress') {
-      actions.push({ label: 'Завершить', column: 'done' as ColumnType, icon: CheckCircle2 })
-    }
-    if (currentColumn === 'done') {
-      actions.push({ label: 'Выдать клиенту', column: 'delivered' as ColumnType, icon: Truck })
-    }
+    
     return actions
+  }
+
+  // Handle drag events
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true)
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      cardId: card.id,
+      sourceColumn: card.column
+    }))
+    e.dataTransfer.effectAllowed = 'move'
+    
+    // Add some visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5'
+    }
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false)
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1'
+    }
   }
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      whileHover={{ scale: 1.02 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 20 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
       className="mb-3"
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
     >
-      <Card className={cn(
-        "group cursor-pointer transition-all duration-200 border-l-4",
-        columnConfig[card.column].borderColor,
-        "hover:shadow-lg dark:hover:shadow-xl",
-        isHovered && "ring-2 ring-primary/20"
-      )}>
+      <Card 
+        className={cn(
+          "group cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md border-l-4",
+          card.priority === 'high' ? 'border-l-red-500' : 
+          card.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-green-500',
+          isDragging && 'rotate-2 scale-105'
+        )}
+        draggable={true}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <h3 className="font-medium text-sm leading-tight">{card.title}</h3>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium line-clamp-1 mb-1">
+                {card.title}
+              </h4>
               {card.phone && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Phone className="w-3 h-3" />
-                  {card.phone}
+                  <span>{card.phone}</span>
                 </div>
               )}
             </div>
+            
             <div className="flex items-center gap-1">
               {card.priority && (
-                <Badge 
-                  variant="outline" 
-                  className={cn("text-xs px-1 py-0", priorityColors[card.priority])}
-                >
+                <Badge variant="secondary" className={cn("text-xs px-1", priorityColors[card.priority])}>
                   {card.priority === 'high' ? '🔥' : card.priority === 'medium' ? '⚡' : '📝'}
                 </Badge>
               )}
@@ -214,21 +251,21 @@ const TaskCard = ({
               </div>
             )}
             {card.totalPrice && (
-              <div className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-1">
                 <DollarSign className="w-3 h-3" />
-                {card.totalPrice}₽
+                <span className="font-medium">{card.totalPrice.toLocaleString()}₽</span>
               </div>
             )}
           </div>
           
           {card.mechanicName && (
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Avatar className="w-5 h-5">
-                <AvatarFallback className="text-xs bg-primary/10">
-                  {card.mechanicName.charAt(0)}
+            <div className="flex items-center gap-2 text-xs">
+              <Avatar className="w-4 h-4">
+                <AvatarFallback className="text-[10px]">
+                  {card.mechanicName.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-xs text-muted-foreground">{card.mechanicName}</span>
+              <span>{card.mechanicName}</span>
             </div>
           )}
         </CardContent>
@@ -237,6 +274,7 @@ const TaskCard = ({
   )
 }
 
+// Updated Column component with drop zones
 const Column = ({ 
   column, 
   cards, 
@@ -248,6 +286,7 @@ const Column = ({
   onCardsChange: (cards: KanbanCard[]) => void
   onDelete: (cardId: string) => void
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false)
   const config = columnConfig[column]
   const Icon = config.icon
   const columnCards = cards.filter(card => card.column === column)
@@ -259,6 +298,35 @@ const Column = ({
     onCardsChange(updatedCards)
   }
 
+  // Handle drop events
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('application/json'))
+      const { cardId, sourceColumn } = dragData
+      
+      // Only move if dropping in a different column
+      if (sourceColumn !== column) {
+        handleMove(cardId, column)
+      }
+    } catch (error) {
+      console.error('Error parsing drag data:', error)
+    }
+  }
+
   return (
     <motion.div
       layout
@@ -268,9 +336,10 @@ const Column = ({
       transition={{ duration: 0.3, delay: Object.keys(columnConfig).indexOf(column) * 0.1 }}
     >
       <div className={cn(
-        "h-full rounded-xl border bg-gradient-to-br backdrop-blur-sm",
+        "h-full rounded-xl border bg-gradient-to-br backdrop-blur-sm transition-all duration-200",
         config.color,
-        config.borderColor
+        config.borderColor,
+        isDragOver && "ring-2 ring-primary ring-offset-2 border-primary"
       )}>
         <div className="p-4 border-b bg-background/50 rounded-t-xl">
           <div className="flex items-center justify-between">
@@ -294,41 +363,36 @@ const Column = ({
           </div>
         </div>
         
-        <div className="p-4 h-[calc(100vh-12rem)] overflow-y-auto">
+        <div 
+          className="p-4 h-[calc(100vh-12rem)] overflow-y-auto"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <AnimatePresence>
-            <Reorder.Group
-              axis="y"
-              values={columnCards}
-              onReorder={(reorderedCards) => {
-                const otherCards = cards.filter(card => card.column !== column)
-                onCardsChange([...otherCards, ...reorderedCards])
-              }}
-              className="space-y-0"
-            >
-              {columnCards.map((card) => (
-                <Reorder.Item
-                  key={card.id}
-                  value={card}
-                  className="list-none"
-                >
-                  <TaskCard
-                    card={card}
-                    onMove={handleMove}
-                    onDelete={onDelete}
-                  />
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
+            {columnCards.map((card) => (
+              <TaskCard
+                key={card.id}
+                card={card}
+                onMove={handleMove}
+                onDelete={onDelete}
+              />
+            ))}
           </AnimatePresence>
           
           {columnCards.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center h-32 text-muted-foreground"
+              className={cn(
+                "flex flex-col items-center justify-center h-32 text-muted-foreground rounded-lg border-2 border-dashed transition-colors",
+                isDragOver ? "border-primary bg-primary/5" : "border-border"
+              )}
             >
               <Icon className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-sm">Пусто</p>
+              <p className="text-sm">
+                {isDragOver ? "Отпустите для перемещения" : "Перетащите карточку сюда"}
+              </p>
             </motion.div>
           )}
         </div>
@@ -354,19 +418,19 @@ export default function ModernKanban({
     onDelete?.(cardId)
   }, [onDelete])
 
+  const columns: ColumnType[] = ['scheduled', 'in-progress', 'done', 'delivered']
+
   return (
-    <div className="h-full bg-gradient-to-br from-background via-background to-accent/5">
-      <div className="flex gap-6 p-6 h-full overflow-x-auto">
-        {(Object.keys(columnConfig) as ColumnType[]).map((column) => (
-          <Column
-            key={column}
-            column={column}
-            cards={cards}
-            onCardsChange={handleCardsChange}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
+    <div className="flex gap-6 h-full overflow-x-auto pb-6">
+      {columns.map((column) => (
+        <Column
+          key={column}
+          column={column}
+          cards={cards}
+          onCardsChange={handleCardsChange}
+          onDelete={handleDelete}
+        />
+      ))}
     </div>
   )
 }

@@ -1,8 +1,6 @@
-// app/dashboard/record/new/page.tsx
-'use client'
+import ModernWizard from '@/app/dashboard/record/new'
 
-import ModernBookingWizard from './ModernWizard'
-
+// В page.tsx
 export default function RecordNewPage() {
-  return <ModernBookingWizard />
+  return <ModernWizard />
 }

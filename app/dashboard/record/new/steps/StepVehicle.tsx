@@ -1,98 +1,217 @@
+// app/dashboard/record/new/steps/StepVehicle.tsx
 'use client'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Card } from '@/components/ui/card'
+
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Car, Plus, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import type { WizardContext, Vehicle } from '@/app/dashboard/record/new/types'
+import { Separator } from '@/components/ui/separator'
+import type { StepProps } from '../StepProps'
 
-const schema = z.object({
-  make: z.string().min(2),
-  model: z.string().min(1),
-  licensePlate: z.string().min(5),
-})
-type Form = z.infer<typeof schema>
-
-type Props = {
-  context: WizardContext
-  onNextAction: (d: Partial<WizardContext>) => void
+// Анимации
+const stepVariants = {
+  hidden: { opacity: 0, x: 100, scale: 0.95 },
+  visible: { opacity: 1, x: 0, scale: 1 },
+  exit: { opacity: 0, x: -100, scale: 0.95 }
 }
 
-export default function StepVehicle({ context, onNextAction }: Props) {
-  const clientId = context.client!._id
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const { register, handleSubmit, formState: { errors } } =
-    useForm<Form>({ resolver: zodResolver(schema) })
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+}
 
-  useEffect(() => {
-    const load = async () => {
-      const r = await fetch(`/api/vehicles?clientId=${clientId}`)
-      if (r.ok) setVehicles(await r.json())
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+}
+
+export default function StepVehicle({ onNextAction, context }: StepProps) {
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newVehicle, setNewVehicle] = useState({ 
+    make: '', 
+    model: '', 
+    year: new Date().getFullYear(), 
+    licensePlate: '', 
+    vin: '' 
+  })
+
+  const client = context.client
+  const vehicles = client?.vehicles || []
+
+  const handleSelectVehicle = (vehicle: StepProps['context']['vehicle']) => {
+    if (vehicle) {
+      onNextAction({ vehicle })
     }
-    load()
-  }, [clientId])
-
-  const select = (v: Vehicle) => onNextAction({ vehicle: v })
-
-  const remove = async (id: string) => {
-    await fetch('/api/vehicles', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId, vehicleId: id })
-    })
-    setVehicles(prev => prev.filter(v => v._id !== id))
   }
 
-  const create = async (data: Form) => {
-    const r = await fetch('/api/vehicles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId, ...data }),
-    })
-    if (!r.ok) return
-    const v: Vehicle = await r.json()
-    onNextAction({ vehicle: v })
+  const handleAddVehicle = async () => {
+    if (!client?._id) return
+
+    try {
+      const response = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          clientId: client._id, 
+          ...newVehicle 
+        })
+      })
+      
+      if (response.ok) {
+        const vehicle = await response.json()
+        const convertedVehicle = {
+          _id: vehicle._id,
+          make: vehicle.make,
+          model: vehicle.model,
+          year: vehicle.year,
+          licensePlate: vehicle.licensePlate || '',
+          vin: vehicle.vin
+        }
+        onNextAction({ vehicle: convertedVehicle })
+      }
+    } catch (error) {
+      console.error('Failed to add vehicle:', error)
+    }
   }
 
   return (
-    <Card className="space-y-4 p-6">
-      <h2 className="text-xl font-bold">Шаг 2 — автомобиль</h2>
-
-      {vehicles.length > 0 && (
-        <>
-          <p>Выберите:</p>
-          <div className="flex flex-col gap-2">
-            {vehicles.map(v => (
-              <div key={v._id} className="flex gap-2">
-                <Button variant="outline" onClick={() => select(v)}>
-                  {v.make} {v.model} • {v.licensePlate}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => remove(v._id)}
+    <motion.div
+      variants={stepVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.4, type: "spring" }}
+    >
+      <Card className="border-0 shadow-2xl bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm">
+        <CardHeader className="pb-6">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Car className="w-6 h-6 text-primary" />
+            </div>
+            Выберите автомобиль
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {vehicles.length > 0 ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-3"
+            >
+              {vehicles.map((vehicle) => (
+                <motion.div
+                  key={vehicle._id}
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSelectVehicle(vehicle)}
+                  className="p-4 border border-border rounded-lg hover:border-primary/50 hover:bg-accent/50 cursor-pointer transition-all duration-200"
                 >
-                  ×
-                </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Car className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          {vehicle.make} {vehicle.model}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {vehicle.year} • {vehicle.licensePlate}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-8"
+            >
+              <Car className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <div className="text-muted-foreground mb-4">
+                У клиента нет добавленных автомобилей
               </div>
-            ))}
-          </div>
-          <hr className="my-4" />
-        </>
-      )}
+            </motion.div>
+          )}
 
-      <p>Или добавьте новый:</p>
-      <form onSubmit={handleSubmit(create)} className="space-y-2">
-        <Input placeholder="Марка" {...register('make')} />
-        {errors.make && <small className="text-destructive">{errors.make.message}</small>}
-        <Input placeholder="Модель" {...register('model')} />
-        {errors.model && <small className="text-destructive">{errors.model.message}</small>}
-        <Input placeholder="Гос-номер" {...register('licensePlate')} />
-        {errors.licensePlate && <small className="text-destructive">{errors.licensePlate.message}</small>}
-        <Button type="submit">Добавить →</Button>
-      </form>
-    </Card>
+          <Separator />
+
+          <div className="flex justify-center">
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              variant="outline"
+              className="bg-background/50 backdrop-blur"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить автомобиль
+            </Button>
+          </div>
+
+          <AnimatePresence>
+            {showAddForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="border-t border-border pt-6"
+              >
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      placeholder="Марка"
+                      value={newVehicle.make}
+                      onChange={(e) => setNewVehicle(prev => ({ ...prev, make: e.target.value }))}
+                      className="h-12"
+                    />
+                    <Input
+                      placeholder="Модель"
+                      value={newVehicle.model}
+                      onChange={(e) => setNewVehicle(prev => ({ ...prev, model: e.target.value }))}
+                      className="h-12"
+                    />
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Год"
+                    value={newVehicle.year}
+                    onChange={(e) => setNewVehicle(prev => ({ ...prev, year: parseInt(e.target.value) || new Date().getFullYear() }))}
+                    className="h-12"
+                  />
+                  <Input
+                    placeholder="Государственный номер"
+                    value={newVehicle.licensePlate}
+                    onChange={(e) => setNewVehicle(prev => ({ ...prev, licensePlate: e.target.value }))}
+                    className="h-12"
+                  />
+                  <Input
+                    placeholder="VIN (необязательно)"
+                    value={newVehicle.vin}
+                    onChange={(e) => setNewVehicle(prev => ({ ...prev, vin: e.target.value }))}
+                    className="h-12"
+                  />
+                </div>
+                <Button 
+                  onClick={handleAddVehicle}
+                  disabled={!newVehicle.make || !newVehicle.model}
+                  className="w-full h-12 mt-4 bg-primary hover:bg-primary/90"
+                >
+                  Добавить и продолжить
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
