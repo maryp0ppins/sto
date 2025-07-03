@@ -53,8 +53,31 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 
+// Типы данных
+interface Vehicle {
+  make: string
+  model: string
+  year: number
+  plate: string
+}
+
+interface Client {
+  id: number
+  name: string
+  phone: string
+  email: string
+  address: string
+  registrationDate: string
+  lastVisit: string
+  vehicles: Vehicle[]
+  totalVisits: number
+  totalSpent: number
+  rating: number
+  status: 'new' | 'regular' | 'vip'
+}
+
 // Моковые данные клиентов
-const mockClients = [
+const mockClients: Client[] = [
   {
     id: 1,
     name: 'Иванов Александр Петрович',
@@ -154,7 +177,223 @@ const statusConfig = {
   }
 }
 
-const ClientCard = ({ client, index }: { client: any, index: number }) => {
+const AddClientForm = ({ onClose }: { onClose: () => void }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    notes: '',
+    vehicles: [{ make: '', model: '', year: '', plate: '', vin: '' }]
+  })
+
+  const addVehicle = () => {
+    setFormData(prev => ({
+      ...prev,
+      vehicles: [...prev.vehicles, { make: '', model: '', year: '', plate: '', vin: '' }]
+    }))
+  }
+
+  const removeVehicle = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      vehicles: prev.vehicles.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateVehicle = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      vehicles: prev.vehicles.map((vehicle, i) => 
+        i === index ? { ...vehicle, [field]: value } : vehicle
+      )
+    }))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Здесь будет логика сохранения клиента
+    console.log('Сохранение клиента:', formData)
+    onClose()
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Основная информация */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Основная информация
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">ФИО клиента *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Иванов Иван Иванович"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Телефон *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+7 (999) 123-45-67"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="client@email.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Адрес</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="г. Москва, ул. Тверская, д. 10"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Заметки</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Дополнительная информация о клиенте..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          {/* Автомобили */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Car className="w-5 h-5" />
+                Автомобили
+              </h3>
+              <Button type="button" variant="outline" size="sm" onClick={addVehicle}>
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить автомобиль
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <AnimatePresence>
+                {formData.vehicles.map((vehicle, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="p-4 border rounded-lg bg-muted/20"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">Автомобиль {index + 1}</h4>
+                      {formData.vehicles.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeVehicle(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <Label>Марка *</Label>
+                        <Input
+                          value={vehicle.make}
+                          onChange={(e) => updateVehicle(index, 'make', e.target.value)}
+                          placeholder="Toyota"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Модель *</Label>
+                        <Input
+                          value={vehicle.model}
+                          onChange={(e) => updateVehicle(index, 'model', e.target.value)}
+                          placeholder="Camry"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Год</Label>
+                        <Input
+                          value={vehicle.year}
+                          onChange={(e) => updateVehicle(index, 'year', e.target.value)}
+                          placeholder="2020"
+                          type="number"
+                          min="1990"
+                          max={new Date().getFullYear() + 1}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Госномер</Label>
+                        <Input
+                          value={vehicle.plate}
+                          onChange={(e) => updateVehicle(index, 'plate', e.target.value)}
+                          placeholder="А123БВ77"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>VIN-номер</Label>
+                        <Input
+                          value={vehicle.vin}
+                          onChange={(e) => updateVehicle(index, 'vin', e.target.value)}
+                          placeholder="1HGCM82633A123456"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Кнопки */}
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" className="flex-1">
+              <Save className="w-4 h-4 mr-2" />
+              Сохранить клиента
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Отмена
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+const ClientCard = ({ client, index }: { client: Client, index: number }) => {
   const initials = client.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
 
   const renderStars = (rating: number) => {
@@ -191,9 +430,9 @@ const ClientCard = ({ client, index }: { client: any, index: number }) => {
                 <div className="flex items-center gap-2 mt-1">
                   <Badge 
                     variant="secondary" 
-                    className={cn("text-xs", statusConfig[client.status as keyof typeof statusConfig].color)}
+                    className={cn("text-xs", statusConfig[client.status].color)}
                   >
-                    {statusConfig[client.status as keyof typeof statusConfig].label}
+                    {statusConfig[client.status].label}
                   </Badge>
                   <div className="flex items-center gap-1">
                     {renderStars(client.rating)}
@@ -244,6 +483,12 @@ const ClientCard = ({ client, index }: { client: any, index: number }) => {
               <MapPin className="w-4 h-4 text-muted-foreground" />
               <span className="text-muted-foreground truncate">{client.address}</span>
             </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                Регистрация: {new Date(client.registrationDate).toLocaleDateString('ru-RU')}
+              </span>
+            </div>
           </div>
 
           {/* Vehicles */}
@@ -253,7 +498,7 @@ const ClientCard = ({ client, index }: { client: any, index: number }) => {
               Автомобили ({client.vehicles.length})
             </h4>
             <div className="space-y-1">
-              {client.vehicles.map((vehicle: any, index: number) => (
+              {client.vehicles.map((vehicle: Vehicle, index: number) => (
                 <div key={index} className="text-xs bg-muted/50 rounded p-2">
                   <span className="font-medium">{vehicle.make} {vehicle.model}</span>
                   <span className="text-muted-foreground ml-2">
@@ -289,217 +534,6 @@ const ClientCard = ({ client, index }: { client: any, index: number }) => {
   )
 }
 
-const AddClientForm = ({ onClose }: { onClose: () => void }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    notes: '',
-    vehicles: [{ make: '', model: '', year: '', plate: '', vin: '' }]
-  })
-
-  const addVehicle = () => {
-    setFormData(prev => ({
-      ...prev,
-      vehicles: [...prev.vehicles, { make: '', model: '', year: '', plate: '', vin: '' }]
-    }))
-  }
-
-  const removeVehicle = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      vehicles: prev.vehicles.filter((_, i) => i !== index)
-    }))
-  }
-
-  const updateVehicle = (index: number, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      vehicles: prev.vehicles.map((vehicle, i) => 
-        i === index ? { ...vehicle, [field]: value } : vehicle
-      )
-    }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Здесь будет логика сохранения клиента
-    console.log('Сохранение клиента:', formData)
-    onClose()
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Основная информация */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Основная информация
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">ФИО клиента *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Иванов Иван Иванович"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Телефон *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+7 (999) 123-45-67"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="client@email.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Адрес</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="г. Москва, ул. Тверская, д. 10"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">Заметки</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Дополнительная информация о клиенте..."
-              rows={3}
-            />
-          </div>
-        </div>
-
-        {/* Автомобили */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Car className="w-5 h-5" />
-              Автомобили
-            </h3>
-            <Button type="button" variant="outline" size="sm" onClick={addVehicle}>
-              <Plus className="w-4 h-4 mr-2" />
-              Добавить автомобиль
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {formData.vehicles.map((vehicle, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 border rounded-lg bg-muted/20"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium">Автомобиль {index + 1}</h4>
-                  {formData.vehicles.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeVehicle(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div className="space-y-2">
-                    <Label>Марка *</Label>
-                    <Input
-                      value={vehicle.make}
-                      onChange={(e) => updateVehicle(index, 'make', e.target.value)}
-                      placeholder="Toyota"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Модель *</Label>
-                    <Input
-                      value={vehicle.model}
-                      onChange={(e) => updateVehicle(index, 'model', e.target.value)}
-                      placeholder="Camry"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Год</Label>
-                    <Input
-                      value={vehicle.year}
-                      onChange={(e) => updateVehicle(index, 'year', e.target.value)}
-                      placeholder="2020"
-                      type="number"
-                      min="1990"
-                      max={new Date().getFullYear() + 1}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Госномер</Label>
-                    <Input
-                      value={vehicle.plate}
-                      onChange={(e) => updateVehicle(index, 'plate', e.target.value)}
-                      placeholder="А123БВ77"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>VIN-номер</Label>
-                    <Input
-                      value={vehicle.vin}
-                      onChange={(e) => updateVehicle(index, 'vin', e.target.value)}
-                      placeholder="1HGCM82633A123456"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Кнопки */}
-        <div className="flex gap-3 pt-4">
-          <Button type="submit" className="flex-1">
-            <Save className="w-4 h-4 mr-2" />
-            Сохранить клиента
-          </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Отмена
-          </Button>
-        </div>
-      </form>
-    </motion.div>
-  )
-}
-
 export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -507,11 +541,11 @@ export default function ClientsPage() {
   const [isAddClientOpen, setIsAddClientOpen] = useState(false)
 
   const filteredAndSortedClients = useMemo(() => {
-    let filtered = mockClients.filter(client => {
+    const filtered = mockClients.filter(client => {
       const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            client.phone.includes(searchTerm) ||
                            client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           client.vehicles.some(v => 
+                           client.vehicles.some((v: Vehicle) => 
                              `${v.make} ${v.model}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              v.plate.toLowerCase().includes(searchTerm.toLowerCase())
                            )
@@ -594,6 +628,10 @@ export default function ClientsPage() {
               />
             </div>
             
+            <Button variant="outline" size="icon" title="Фильтры">
+              <Filter className="w-4 h-4" />
+            </Button>
+            
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Статус" />
@@ -625,37 +663,47 @@ export default function ClientsPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
-            <CardContent className="p-4 text-center">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Всего клиентов</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="text-2xl font-bold text-primary">{stats.total}</div>
-              <div className="text-xs text-muted-foreground">Всего клиентов</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Новых</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="text-2xl font-bold text-blue-600">{stats.newClients}</div>
-              <div className="text-xs text-muted-foreground">Новых</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">VIP</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="text-2xl font-bold text-purple-600">{stats.vipClients}</div>
-              <div className="text-xs text-muted-foreground">VIP</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Общая выручка</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="text-2xl font-bold text-green-600">
                 {stats.totalRevenue.toLocaleString()}₽
               </div>
-              <div className="text-xs text-muted-foreground">Общая выручка</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Средний рейтинг</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
               <div className="text-2xl font-bold text-yellow-600">
                 {stats.avgRating.toFixed(1)}
               </div>
-              <div className="text-xs text-muted-foreground">Средний рейтинг</div>
             </CardContent>
           </Card>
         </div>

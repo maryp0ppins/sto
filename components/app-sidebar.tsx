@@ -21,7 +21,6 @@ import {
   Users,
   Wrench,
   Settings,
-  LogOut,
   Calendar,
   BarChart3,
   Bell,
@@ -67,7 +66,7 @@ const UserProfile = () => {
           <Avatar className="h-10 w-10">
             <AvatarImage src="" />
             <AvatarFallback className="bg-primary text-primary-foreground font-medium">
-              {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'A'}
+              {user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'A'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
