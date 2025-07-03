@@ -1,17 +1,14 @@
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/app-sidebar'
+// app/dashboard/layout.tsx
+import { VisitsProvider } from '@/hooks/use-api'
 
 export default function DashboardLayout({
-  children,
+  children
 }: {
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <VisitsProvider>
+      {children}
+    </VisitsProvider>
   )
 }

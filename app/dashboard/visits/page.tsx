@@ -254,7 +254,7 @@ export default function VisitsPage() {
   const filteredVisits = useMemo(() => {
     if (!visits || visits.length === 0) return []
     
-    return visits.filter(visit => {
+    return visits.filter((visit: Visit) => {
       const client = typeof visit.clientId === 'object' ? visit.clientId : null
       const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
         ? visit.serviceIds as { title?: string }[] 
@@ -281,13 +281,13 @@ export default function VisitsPage() {
 
   const stats = useMemo(() => {
     const total = filteredVisits.length
-    const completed = filteredVisits.filter(v => v.status === 'done' || v.status === 'delivered').length
-    const inProgress = filteredVisits.filter(v => v.status === 'in-progress').length
-    const scheduled = filteredVisits.filter(v => v.status === 'scheduled').length
-    
+    const completed = filteredVisits.filter((v: Visit) => v.status === 'done' || v.status === 'delivered').length
+    const inProgress = filteredVisits.filter((v: Visit) => v.status === 'in-progress').length
+    const scheduled = filteredVisits.filter((v: Visit) => v.status === 'scheduled').length
+
     const totalRevenue = filteredVisits
-      .filter(v => v.status === 'done' || v.status === 'delivered')
-      .reduce((sum, v) => {
+      .filter((v: Visit) => v.status === 'done' || v.status === 'delivered')
+      .reduce((sum: number, v: Visit) => {
         const services = Array.isArray(v.serviceIds) && v.serviceIds.length > 0 && typeof v.serviceIds[0] === 'object' 
           ? v.serviceIds as { price?: number }[] 
           : []
@@ -499,7 +499,7 @@ export default function VisitsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVisits.map((visit) => (
+            {filteredVisits.map((visit: Visit) => (
               <VisitCard
                 key={visit._id}
                 visit={visit}

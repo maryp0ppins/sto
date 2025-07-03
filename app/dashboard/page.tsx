@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { type Visit } from '@/lib/api'
 import { 
   Calendar, 
   DollarSign, 
@@ -186,21 +187,20 @@ export default function DashboardPage() {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    // Today's visits
-    const todayVisits = visits.filter(visit => {
+    const todayVisits = visits.filter((visit: Visit) => {
       const visitDate = new Date(visit.slotStart)
-      return visitDate >= today && visitDate < tomorrow
+     return visitDate >= today && visitDate < tomorrow
     })
 
     // Calculate revenue from completed visits today
     const todayRevenue = todayVisits
-      .filter(visit => visit.status === 'done' || visit.status === 'delivered')
-      .reduce((sum, visit) => {
+      .filter((visit: Visit) => visit.status === 'done' || visit.status === 'delivered')
+      .reduce((sum: number, visit: Visit) => {
         const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
-          ? visit.serviceIds as { price?: number }[] 
-          : []
-        return sum + services.reduce((serviceSum: number, service: { price?: number }) => serviceSum + (service.price || 0), 0)
-      }, 0)
+       ? visit.serviceIds as { price?: number }[] 
+       : []
+      return sum + services.reduce((serviceSum: number, service: { price?: number }) => serviceSum + (service.price || 0), 0)
+    }, 0)
 
     // Active clients (clients with visits in the last 30 days)
     const thirtyDaysAgo = new Date()
@@ -208,11 +208,12 @@ export default function DashboardPage() {
     
     const activeClientIds = new Set(
       visits
-        .filter(visit => new Date(visit.slotStart) >= thirtyDaysAgo)
-        .map(visit => typeof visit.clientId === 'object' ? visit.clientId._id : visit.clientId)
+        .filter((visit: Visit) => new Date(visit.slotStart) >= thirtyDaysAgo)
+        .map((visit: Visit) => typeof visit.clientId === 'object' ? visit.clientId._id : visit.clientId)
+
     )
 
-    const completedToday = todayVisits.filter(visit => 
+    const completedToday = todayVisits.filter((visit: Visit) => 
       visit.status === 'done' || visit.status === 'delivered'
     ).length
 
@@ -237,9 +238,9 @@ export default function DashboardPage() {
     }> = []
 
     visits
-      .sort((a, b) => new Date(b.updatedAt || b.slotStart).getTime() - new Date(a.updatedAt || a.slotStart).getTime())
-      .slice(0, 4)
-      .forEach(visit => {
+          .sort((a: Visit, b: Visit) => new Date(b.updatedAt || b.slotStart).getTime() - new Date(a.updatedAt || a.slotStart).getTime())
+          .slice(0, 4)
+          .forEach((visit: Visit) => {
         const client = typeof visit.clientId === 'object' ? visit.clientId : null
         const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
           ? visit.serviceIds as unknown[] 
@@ -299,13 +300,13 @@ export default function DashboardPage() {
     tomorrow.setDate(tomorrow.getDate() + 2) // Show today and tomorrow
 
     return visits
-      .filter(visit => {
+      .filter((visit: Visit) => {
         const visitDate = new Date(visit.slotStart)
         return visitDate >= now && visitDate < tomorrow && visit.status === 'scheduled'
       })
-      .sort((a, b) => new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime())
+      .sort((a: Visit, b: Visit) => new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime())
       .slice(0, 5)
-      .map(visit => {
+      .map((visit: Visit) => {
         const client = typeof visit.clientId === 'object' ? visit.clientId : null
         const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
           ? visit.serviceIds as unknown[] 
@@ -490,8 +491,8 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {upcomingVisits.map((visit) => (
-                    <UpcomingVisitItem key={visit.id} {...visit} />
+                 {upcomingVisits.map((visitItem) => (
+                    <UpcomingVisitItem key={visitItem.id} {...visitItem} />
                   ))}
                 </div>
               )}
