@@ -491,7 +491,13 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                 {upcomingVisits.map((visitItem) => (
+                  {upcomingVisits.map((visitItem: {
+                    id: string
+                    client: string
+                    service: string
+                    time: string
+                    vehicle: string
+                  }) => (
                     <UpcomingVisitItem key={visitItem.id} {...visitItem} />
                   ))}
                 </div>

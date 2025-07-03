@@ -1,5 +1,5 @@
 // app/dashboard/layout.tsx
-import { VisitsProvider } from '@/hooks/use-api'
+import { VisitsProvider } from '@/contexts/visits-context'
 
 export default function DashboardLayout({
   children

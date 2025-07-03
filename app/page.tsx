@@ -1,5 +1,14 @@
-import { redirect } from 'next/navigation'
+// app/dashboard/layout.tsx
+import { VisitsProvider } from '@/contexts/visits-context'
 
-export default function Home() {
-  redirect('/login')
+export default function DashboardLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <VisitsProvider>
+      {children}
+    </VisitsProvider>
+  )
 }
