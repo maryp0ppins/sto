@@ -61,6 +61,17 @@ export type Visit = {
   price?: number
 }
 
+export type VisitFormData = {
+  clientId: string
+  vehicleId: string
+  serviceIds: string[]
+  mechanicId: string
+  slotStart: string
+  slotEnd: string
+  status: VisitStatus
+}
+
+
 export interface User {
   id: string
   name: string
