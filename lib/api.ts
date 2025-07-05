@@ -180,9 +180,9 @@ export const servicesAPI = {
     apiCall(`/services?id=${id}`, { method: 'DELETE' }),
 }
 
-// Visits API
+// Visits API - ОБНОВЛЕННАЯ версия
 export const visitsAPI = {
-  // Get visits with optional filters
+  // Get all visits with filters
   getAll: (filters?: {
     mechanicId?: string
     status?: string
@@ -199,6 +199,10 @@ export const visitsAPI = {
     return apiCall(`/visits${queryString ? `?${queryString}` : ''}`)
   },
 
+  // НОВАЯ функция: Get single visit by ID
+  getById: (id: string): Promise<Visit> =>
+    apiCall(`/visits/${id}`),
+
   // Create visit
   create: (data: Omit<Visit, '_id'>): Promise<Visit> =>
     apiCall('/visits', {
@@ -206,11 +210,11 @@ export const visitsAPI = {
       body: JSON.stringify(data),
     }),
 
-  // Update visit
+  // Update visit - ОБНОВЛЕННАЯ для поддержки PUT на /visits/[id]
   update: (id: string, data: Partial<Visit>): Promise<Visit> =>
-    apiCall('/visits', {
+    apiCall(`/visits/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ id, ...data }),
+      body: JSON.stringify(data),
     }),
 
   // Delete visit

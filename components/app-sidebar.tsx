@@ -1,3 +1,4 @@
+// components/app-sidebar.tsx - финальная чистая версия
 'use client'
 
 import Link from 'next/link'
@@ -23,35 +24,34 @@ import {
   Settings,
   Calendar,
   BarChart3,
-  Bell,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { LogoutButton } from './ui/logout-button'
-import { Badge } from './ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Card, CardContent } from './ui/card'
 
+// Чистое меню без бейджей
 const menu = [
   {
     label: 'Основное',
     items: [
-      { href: '/dashboard', icon: Home, title: 'Главная', badge: null },
-      { href: '/dashboard/visits', icon: Calendar, title: 'Все визиты', badge: '12' },
-      { href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан', badge: '3' },
+      { href: '/dashboard', icon: Home, title: 'Главная' },
+      { href: '/dashboard/visits', icon: Calendar, title: 'Все визиты' },
+      { href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан' },
     ],
   },
   {
     label: 'Управление',
     items: [
-      { href: '/dashboard/clients', icon: Users, title: 'Клиенты', badge: '245' },
-      { href: '/dashboard/services', icon: Wrench, title: 'Услуги', badge: null },
-      { href: '/dashboard/reports', icon: BarChart3, title: 'Отчеты', badge: null },
+      { href: '/dashboard/clients', icon: Users, title: 'Клиенты' },
+      { href: '/dashboard/services', icon: Wrench, title: 'Услуги' },
+      { href: '/dashboard/reports', icon: BarChart3, title: 'Отчеты' },
     ],
   },
   {
     label: 'Система',
     items: [
-      { href: '/dashboard/settings', icon: Settings, title: 'Настройки', badge: null },
+      { href: '/dashboard/settings', icon: Settings, title: 'Настройки' },
     ],
   },
 ]
@@ -60,7 +60,7 @@ const UserProfile = () => {
   const { user } = useAuth()
 
   return (
-    <Card className="mx-2 mb-2">
+    <Card className="mx-2 mb-4">
       <CardContent className="p-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
@@ -77,55 +77,28 @@ const UserProfile = () => {
               {user?.role === 'admin' ? 'Администратор' : 'Механик'}
             </p>
           </div>
-          <div className="relative">
-            <Bell className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-2 w-2 p-0 text-[9px]">
-              3
-            </Badge>
-          </div>
         </div>
       </CardContent>
     </Card>
   )
 }
 
-const QuickStats = () => (
-  <Card className="mx-2 mb-4">
-    <CardContent className="p-3">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Сегодня</span>
-          <span className="font-medium">12 записей</span>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">В работе</span>
-          <span className="font-medium text-blue-600">3 заказа</span>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Выручка</span>
-          <span className="font-medium text-green-600">45,300MDL</span>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-)
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { user } = useAuth()
 
-  const items =
-    user?.role === 'mechanic'
-      ? [
-          {
-            label: 'Основное',
-            items: [
-              { href: '/dashboard', icon: Home, title: 'Главная', badge: null },
-              { href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан', badge: '3' },
-            ],
-          },
-        ]
-      : menu
+  // Для механика показываем только основные разделы
+  const items = user?.role === 'mechanic'
+    ? [
+        {
+          label: 'Основное',
+          items: [
+            { href: '/dashboard', icon: Home, title: 'Главная' },
+            { href: '/dashboard/kanban', icon: KanbanSquare, title: 'Канбан' },
+          ],
+        },
+      ]
+    : menu
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -143,8 +116,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent className="px-0">
         <UserProfile />
-        
-        {user?.role === 'admin' && <QuickStats />}
 
         {items.map((group) => (
           <SidebarGroup key={group.label}>
@@ -153,7 +124,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map(({ href, icon: Icon, title, badge }) => (
+                {group.items.map(({ href, icon: Icon, title }) => (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
                       asChild
@@ -164,11 +135,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                       <Link href={href} className="flex items-center gap-3 px-3 py-2">
                         <Icon className="h-4 w-4 shrink-0" />
                         <span className="flex-1">{title}</span>
-                        {badge && (
-                          <Badge variant="secondary" className="h-5 text-xs">
-                            {badge}
-                          </Badge>
-                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

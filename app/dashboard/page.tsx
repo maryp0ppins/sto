@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { type Visit } from '@/lib/api'
 import { 
   Calendar, 
@@ -138,36 +139,9 @@ const ActivityItem = ({
   )
 }
 
-const UpcomingVisitItem = ({ 
-  client, 
-  service, 
-  time, 
-  vehicle 
-}: { 
-  client: string
-  service: string
-  time: string
-  vehicle: string
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
-  >
-    <div className="flex-1 min-w-0">
-      <p className="font-medium text-sm">{client}</p>
-      <p className="text-xs text-muted-foreground">{vehicle}</p>
-    </div>
-    <div className="text-right">
-      <p className="text-sm font-medium">{service}</p>
-      <p className="text-xs text-muted-foreground">{time}</p>
-    </div>
-  </motion.div>
-)
-
 export default function DashboardPage() {
   const { user } = useAuth()
-  
+  const router = useRouter()
   // API hooks - без фильтров
   const { data: visits = [], loading: visitsLoading } = useVisits()
 
@@ -292,40 +266,92 @@ export default function DashboardPage() {
   }, [visits])
 
   // Upcoming visits (today and tomorrow)
-  const upcomingVisits = useMemo(() => {
-    if (!visits || visits.length === 0) return []
+const upcomingVisits = useMemo(() => {
+  if (!visits || visits.length === 0) return []
 
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 2) // Show today and tomorrow
+  const now = new Date()
 
-    return visits
-      .filter((visit: Visit) => {
-        const visitDate = new Date(visit.slotStart)
-        return visitDate >= now && visitDate < tomorrow && visit.status === 'scheduled'
-      })
-      .sort((a: Visit, b: Visit) => new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime())
-      .slice(0, 5)
-      .map((visit: Visit) => {
-        const client = typeof visit.clientId === 'object' ? visit.clientId : null
-        const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
-          ? visit.serviceIds as unknown[] 
-          : []
-        
-        const startTime = new Date(visit.slotStart)
-        const vehicle = client?.vehicles && client.vehicles.length > 0 
-          ? `${client.vehicles[0].make} ${client.vehicles[0].model}`
-          : 'Автомобиль'
+  return visits
+    .filter((visit: Visit) => {
+      const visitDate = new Date(visit.slotStart)
+      // Показываем все будущие визиты, независимо от статуса
+      return visitDate >= now
+    })
+    .sort((a: Visit, b: Visit) => {
+      // Сортируем по времени - ближайшие первыми
+      return new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime()
+    })
+    .map((visit: Visit) => {
+      const client = typeof visit.clientId === 'object' ? visit.clientId : null
+      const services = Array.isArray(visit.serviceIds) && visit.serviceIds.length > 0 && typeof visit.serviceIds[0] === 'object' 
+        ? visit.serviceIds as unknown[] 
+        : []
+      
+      const startTime = new Date(visit.slotStart)
+      const vehicle = client?.vehicles && client.vehicles.length > 0 
+        ? `${client.vehicles[0].make} ${client.vehicles[0].model}`
+        : 'Автомобиль'
 
-        return {
-          id: visit._id || Math.random().toString(),
-          client: client?.name || 'Клиент',
-          service: (services[0] as { title?: string })?.title || 'Услуга',
-          time: startTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-          vehicle
+      // Определяем отображаемую дату более умно
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
+      let dateLabel: string
+      if (startTime.toDateString() === today.toDateString()) {
+        dateLabel = 'Сегодня'
+      } else if (startTime.toDateString() === tomorrow.toDateString()) {
+        dateLabel = 'Завтра'
+      } else {
+        const diffDays = Math.ceil((startTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        if (diffDays <= 7) {
+          dateLabel = startTime.toLocaleDateString('ru-RU', { weekday: 'long' })
+        } else {
+          dateLabel = startTime.toLocaleDateString('ru-RU', { 
+            day: 'numeric', 
+            month: 'short' 
+          })
         }
-      })
-  }, [visits])
+      }
+
+      // Определяем цвет статуса
+      const getStatusColor = (status: string) => {
+        switch (status) {
+          case 'scheduled': return 'text-blue-600 bg-blue-50'
+          case 'in-progress': return 'text-orange-600 bg-orange-50'
+          case 'done': return 'text-green-600 bg-green-50'
+          case 'delivered': return 'text-purple-600 bg-purple-50'
+          default: return 'text-gray-600 bg-gray-50'
+        }
+      }
+
+      const getStatusText = (status: string) => {
+        switch (status) {
+          case 'scheduled': return 'Запланирован'
+          case 'in-progress': return 'В работе'
+          case 'done': return 'Готов'
+          case 'delivered': return 'Выдан'
+          default: return status
+        }
+      }
+
+      return {
+        id: visit._id || Math.random().toString(),
+        client: client?.name || 'Клиент',
+        service: (services[0] as { title?: string })?.title || 'Услуга',
+        time: startTime.toLocaleTimeString('ru-RU', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        date: dateLabel,
+        vehicle,
+        status: visit.status,
+        statusText: getStatusText(visit.status),
+        statusColor: getStatusColor(visit.status)
+      }
+    })
+}, [visits])
+
 
   // Popular services
   const popularServices = useMemo(() => {
@@ -465,51 +491,63 @@ export default function DashboardPage() {
           </Card>
 
           {/* Upcoming Visits */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Ближайшие визиты
-              </CardTitle>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/visits">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Все визиты
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                </div>
-              ) : upcomingVisits.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    Нет запланированных визитов
+<Card>
+  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <CardTitle className="flex items-center gap-2">
+      <Calendar className="w-5 h-5" />
+      Ближайшие визиты
+    </CardTitle>
+    <Button asChild variant="outline" size="sm">
+      <Link href="/dashboard/visits">
+        <ExternalLink className="w-4 h-4 mr-2" />
+        Все визиты
+      </Link>
+    </Button>
+  </CardHeader>
+  <CardContent className="p-0">
+    {loading ? (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    ) : upcomingVisits.length === 0 ? (
+      <p className="text-muted-foreground py-8 text-center px-6">
+        Нет запланированных визитов
+      </p>
+    ) : (
+      <div className="max-h-80 overflow-y-auto">
+        <div className="space-y-1 p-2">
+          {upcomingVisits.map((visit) => (
+            <div
+              key={visit.id}
+              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+              onClick={() => router.push('/dashboard/visits')}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{visit.client}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {visit.vehicle}
                   </p>
-                  <Button asChild size="sm">
-                    <Link href="/dashboard/record/new">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Создать запись
-                    </Link>
-                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingVisits.map((visitItem: {
-                    id: string
-                    client: string
-                    service: string
-                    time: string
-                    vehicle: string
-                  }) => (
-                    <UpcomingVisitItem key={visitItem.id} {...visitItem} />
-                  ))}
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${visit.statusColor}`}>
+                  {visit.statusText}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="truncate flex-1 pr-2">{visit.service}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span>{visit.date}</span>
+                  <span className="font-medium">{visit.time}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
         </div>
 
         {/* Popular Services */}

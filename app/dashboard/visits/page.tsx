@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import { 
   Calendar, 
   Clock, 
@@ -243,6 +244,7 @@ function VisitCard({
 }
 
 export default function VisitsPage() {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
@@ -308,7 +310,7 @@ export default function VisitsPage() {
     try {
       await updateVisit(id, { 
         status: status as Visit['status'],
-        updatedAt: new Date().toISOString() // Добавляем время обновления
+        updatedAt: new Date().toISOString()
       })
       refetch()
     } catch (error) {
@@ -316,8 +318,9 @@ export default function VisitsPage() {
     }
   }
   const handleEdit = (visit: Visit) => {
-    // TODO: Implement edit functionality
-    console.log('Edit visit:', visit)
+    if (visit._id) {
+      router.push(`/dashboard/visits/${visit._id}/edit`)
+    }
   }
 
   const handleDelete = async (id: string) => {

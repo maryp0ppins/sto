@@ -1,80 +1,73 @@
-// types.ts
+// app/dashboard/record/new/types.ts - обновляем типы
 
-export type Client = {
-  _id?: string
+export interface Client {
+  _id: string
   name: string
   phone: string
   email?: string
   vehicles?: Vehicle[]
 }
 
-
-export type Vehicle = {
-  _id?: string
+export interface Vehicle {
+  _id: string
   make: string
   model: string
+  year: number
   licensePlate: string
   vin?: string
-  year?: number
 }
 
-export type Service = {
+export interface Service {
   _id: string
   title: string
   price: number
   durationMinutes: number
 }
 
-export type TimeSlot = {
-  start: string
-  end: string
+export interface Mechanic {
+  _id: string
+  name: string
+  role: string
 }
 
-export type WizardContext = {
+export interface TimeSlot {
+  date: string
+  time: string
+  mechanic: Mechanic | null
+}
+
+export interface WizardContext {
   client?: Client
   vehicle?: Vehicle
   services?: Service[]
-   slot?: Slot
+  selectedSlot?: TimeSlot
+  totalDuration?: number
+  totalPrice?: number
 }
 
-export type Slot = {
-  start: string
-  end: string
-  mechanicId: string
-  mechanicName: string
-}
-export type StepProps = {
-  context: WizardContext
-  onNextAction: (data: Partial<WizardContext>) => void
-}
-
-export type VisitStatus = 'scheduled' | 'in-progress' | 'done' | 'delivered'
-
-export type Visit = {
+// Тип Visit для wizard (совместимый с API)
+export interface Visit {
   _id: string
-  clientId: Client
-  mechanicId: { _id: string; name: string }
+  clientId: Client | string
+  vehicleId?: string
+  serviceIds: Service[] | string[]
   slotStart: string
   slotEnd: string
-  status: VisitStatus
-  serviceIds?: Service[]
-  price?: number
+  mechanicId: Mechanic | string
+  status: 'scheduled' | 'in-progress' | 'done' | 'delivered'
+  totalPrice?: number
+  duration?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
-export type VisitFormData = {
-  clientId: string
-  vehicleId: string
-  serviceIds: string[]
-  mechanicId: string
-  slotStart: string
-  slotEnd: string
-  status: VisitStatus
-}
-
-
-export interface User {
-  id: string
-  name: string
-  email: string
-  role: 'admin' | 'mechanic'
+// Интерфейс для пропов шагов wizard
+export interface WizardStepProps {
+  context: WizardContext
+  updateContext: (updates: Partial<WizardContext>) => void
+  onNext?: () => void
+  onPrev?: () => void
+  onSubmit?: () => Promise<void>
+  isSubmitting?: boolean
+  editMode?: boolean
 }
